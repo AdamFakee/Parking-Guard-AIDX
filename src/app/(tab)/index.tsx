@@ -1,12 +1,6 @@
-import React from 'react'
-import { Text, View } from 'react-native'
+import { Dashboard } from '@/shared/features/gate';
 
-const index = () => {
-  return (
-    <View className="flex-1 items-center">
-      <Text>index</Text>
-    </View>
-  )
+export default function DashboardScreen() {
+  return <Dashboard />;
 }
 
-export default index
