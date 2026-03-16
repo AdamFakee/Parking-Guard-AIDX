@@ -6,8 +6,10 @@ export type TLoginForm = InferInput<typeof LoginSchema>;
 
 export interface IAuthUser {
   id: string;
-  role: 'admin' | 'staff';
+  role: TRole;
 }
+
+export type TRole = 'admin' | 'staff';
 
 export interface Tokens {
   accessToken: string;
