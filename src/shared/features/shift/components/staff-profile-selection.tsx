@@ -1,4 +1,5 @@
 import { AppHeader } from '@/shared/components/ui';
+import { useRouter } from 'expo-router';
 import React from 'react';
 import {
   ActivityIndicator,
@@ -15,11 +16,23 @@ import { useGetAllStaff } from '../hooks';
  * Matches the provided HTML mockup design.
  */
 export const StaffProfileSelection = () => {
+  const router = useRouter();
   const { data: staffList, isLoading } = useGetAllStaff('staff');
 
   // For UI demo purposes, we still use some static data or defaults since the DB only has name/role
   const getAvatar = (name: string) => {
     return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&size=128`;
+  };
+
+  const handleStaffPress = (staff: any) => {
+    router.push({
+      pathname: '/(auth)/staff-passcode',
+      params: {
+        staffId: staff.id,
+        name: staff.name,
+        avatar: getAvatar(staff.name),
+      }
+    });
   };
 
   return (
@@ -51,6 +64,7 @@ export const StaffProfileSelection = () => {
               {staffList?.map((staff) => (
                 <Pressable
                   key={staff.id}
+                  onPress={() => handleStaffPress(staff)}
                   className="flex-row items-center p-3 bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl active:bg-slate-100"
                 >
                   <Image

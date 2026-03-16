@@ -1,6 +1,7 @@
 import { ErrorFallback } from '@/shared/components/common'
 import { db } from '@/shared/db'
 import { onAppStateChange, queryClient, setupReactQueryMobile, useDevTools } from '@/shared/lib'
+import { useAuthStore } from '@/shared/store/useAuthStore'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { useMigrations } from 'drizzle-orm/expo-sqlite/migrator'
 import { Stack, useRouter } from 'expo-router'
@@ -9,8 +10,8 @@ import { useEffect } from 'react'
 import { ErrorBoundary } from 'react-error-boundary'
 import { AppState, Text, View } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
-import { useAuthStore } from '@/shared/store/useAuthStore'
 
+import { useShiftStore } from '@/shared/features/shift'
 import migrations from '../../drizzle/migrations'
 import './global.css'
 
@@ -19,7 +20,8 @@ setupReactQueryMobile()
 export default function RootLayout() {
   useDevTools(queryClient);
 
-  const { isAuthenticated, _hasHydrated } = useAuthStore();
+  const { isAuthenticated, _hasHydrated: authHydrated } = useAuthStore();
+  const { currentShift, _hasHydrated: shiftHydrated } = useShiftStore();
   const router = useRouter();
   const { success, error } = useMigrations(db, migrations);
 
@@ -29,14 +31,18 @@ export default function RootLayout() {
   }, [])
 
   useEffect(() => {
-    if (!success || !_hasHydrated) return;
+    if (!success || !authHydrated || !shiftHydrated) return;
 
     if (isAuthenticated) {
-      router.replace('/(auth)/select-role');
+      if (currentShift) {
+        router.replace('/(tab)');
+      } else {
+        router.replace('/(auth)/select-role');
+      }
     } else {
       router.replace('/(auth)');
     }
-  }, [success, _hasHydrated, isAuthenticated, router]);
+  }, [success, authHydrated, shiftHydrated, isAuthenticated, currentShift, router]);
 
   if (error) {
     return (
