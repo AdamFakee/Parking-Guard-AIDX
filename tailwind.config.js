@@ -1,10 +1,14 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: 'class',
   content: ['./src/**/*.{js,jsx,ts,tsx}'],
   presets: [require('nativewind/preset')],
   theme: {
     extend: {
       colors: {
+        primary: '#3B82F6',
+        'background-light': '#f8f6f6',
+        'background-dark': '#221610',
         app: {
           darker: '#0A0E17',
           dark: '#0c1220',
@@ -36,6 +40,7 @@ module.exports = {
         header: '64px',
       },
       fontFamily: {
+        display: ['DM Sans', 'Public Sans', 'sans-serif'],
         sans: ['DM Sans', 'Segoe UI', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
       },
@@ -52,11 +57,13 @@ module.exports = {
         medium: ['18px', { fontFamily: 'DM Sans' }],
       },
       borderRadius: {
-        lg: '10px',
-        xl: '12px',
+        DEFAULT: '0.25rem',
+        lg: '0.5rem',
+        xl: '0.75rem',
         '2xl': '14px',
         '3xl': '16px',
         '4xl': '20px',
+        full: '9999px',
       },
       backgroundImage: {
         'gradient-main': 'linear-gradient(135deg, #0c1220 0%, #0a0e17 50%, #111827 100%)',

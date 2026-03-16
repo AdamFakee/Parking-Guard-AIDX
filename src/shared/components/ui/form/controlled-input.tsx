@@ -1,9 +1,10 @@
+import { ReactNode } from 'react'
 import { Control, FieldValues, Path, useController } from 'react-hook-form'
 import { Text, View } from 'react-native'
 import { Input, type InputProps } from './input'
 import { InputError } from './input-error'
 
-interface ControlledInputProps<T extends FieldValues> extends Omit<
+export interface ControlledInputProps<T extends FieldValues> extends Omit<
   InputProps,
   'value' | 'onChangeText' | 'onBlur' | 'error'
 > {
@@ -12,6 +13,10 @@ interface ControlledInputProps<T extends FieldValues> extends Omit<
   label?: string
   required?: boolean
   error?: string
+  leftElement?: ReactNode
+  rightElement?: ReactNode
+  topRightElement?: ReactNode
+  containerClassName?: string
 }
 
 export function ControlledInput<T extends FieldValues>({
@@ -21,6 +26,10 @@ export function ControlledInput<T extends FieldValues>({
   label,
   required,
   error: customError,
+  leftElement,
+  rightElement,
+  topRightElement,
+  containerClassName,
   ...inputProps
 }: ControlledInputProps<T>) {
   const {
@@ -34,22 +43,42 @@ export function ControlledInput<T extends FieldValues>({
   const errorMessage = customError || formError?.message
 
   return (
-    <View className="mb-4">
-      {label && (
-        <Text className="mb-2 text-note1 text-slate-100 font-medium">
-          {label}
-          {required && <Text className="text-brand-red"> *</Text>}
-        </Text>
+    <View className={`gap-2 ${containerClassName || ''}`}>
+      {(label || topRightElement) && (
+        <View className="flex-row items-center justify-between ml-1">
+          {label ? (
+            <Text className="text-note1 text-slate-100 font-medium">
+              {label}
+              {required && <Text className="text-brand-red"> *</Text>}
+            </Text>
+          ) : (
+            <View />
+          )}
+          {topRightElement}
+        </View>
       )}
-      <Input
-        value={value}
-        onBlur={onBlur}
-        onChangeText={onChange}
-        error={!!errorMessage}
-        autoCapitalize="none"
-        className={className}
-        {...inputProps}
-      />
+
+      <View className="relative justify-center">
+        {leftElement && (
+          <View className="absolute left-4 z-10">
+            {leftElement}
+          </View>
+        )}
+        <Input
+          value={value}
+          onBlur={onBlur}
+          onChangeText={onChange}
+          error={!!errorMessage}
+          autoCapitalize="none"
+          className={className}
+          {...inputProps}
+        />
+        {rightElement && (
+          <View className="absolute right-2 z-10">
+            {rightElement}
+          </View>
+        )}
+      </View>
 
       {errorMessage && <InputError message={errorMessage} />}
     </View>
