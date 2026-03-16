@@ -1,4 +1,4 @@
-import { COLORS } from '@/shared/constants'
+import { GRADIENTS } from '@/shared/constants'
 import { LinearGradient } from 'expo-linear-gradient'
 import React from 'react'
 import { StyleSheet, ViewProps } from 'react-native'
@@ -11,7 +11,7 @@ interface GradientBackgroundProps extends ViewProps {
 export const GradientBackground = ({ children, style, ...props }: GradientBackgroundProps) => {
   return (
     <LinearGradient
-      colors={[...COLORS.gradient.brand]}
+      colors={GRADIENTS.main}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={[styles.container, style]}

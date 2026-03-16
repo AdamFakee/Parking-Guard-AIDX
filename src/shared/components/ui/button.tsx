@@ -16,9 +16,9 @@ interface ButtonProps extends PressableProps {
 }
 
 const variantStyles = {
-  primary: 'bg-primary border-primary',
-  secondary: 'bg-background-secondary border-primary',
-  outline: 'bg-background-white border-primary',
+  primary: 'bg-brand-blue border-brand-blue',
+  secondary: 'bg-app-surface border-slate-700',
+  outline: 'bg-transparent border-brand-blue',
 };
 
 export const Button = ({
@@ -34,7 +34,7 @@ export const Button = ({
   style,
   ...props
 }: ButtonProps) => {
-  const iconColor = variant === 'primary' ? COLORS.text.primary.white : COLORS.primary;
+  const iconColor = variant === 'primary' ? COLORS.slate[100] : COLORS.brand.blue;
 
   return (
     <Pressable
@@ -64,8 +64,8 @@ export const Button = ({
           {LeftIcon && <View className="mr-3"><LeftIcon size={iconSize} color={iconColor} /></View>}
           <Text
             className={cn(
-              'text-center text-mainContent font-semibold',
-              variant === 'primary' ? 'text-text-primary-white' : 'text-primary',
+              'text-center text-button font-semibold',
+              variant === 'primary' ? 'text-slate-100' : 'text-brand-blue',
               textClassName
             )}
           >

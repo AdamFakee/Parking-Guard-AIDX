@@ -36,9 +36,9 @@ export function ControlledInput<T extends FieldValues>({
   return (
     <View className="mb-4">
       {label && (
-        <Text className="mb-2 font-note-1 text-black">
+        <Text className="mb-2 text-note1 text-slate-100 font-medium">
           {label}
-          {required && <Text className="text-primary"> *</Text>}
+          {required && <Text className="text-brand-red"> *</Text>}
         </Text>
       )}
       <Input

@@ -1,6 +1,6 @@
 export * from './app-header'
 export * from './button'
-export * from './container'
+export * from './card'
 export * from './form'
 export * from './gradient-background'
 export * from './haptic-tab'

@@ -5,5 +5,5 @@ interface InputErrorProps {
 }
 
 export const InputError = ({ message }: InputErrorProps) => {
-  return <Text className="ml-1 mt-1 text-note-3 font-medium text-primary">{message}</Text>
+  return <Text className="ml-1 mt-1 text-note font-medium text-brand-red">{message}</Text>
 }

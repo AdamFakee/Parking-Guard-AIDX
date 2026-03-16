@@ -3,7 +3,7 @@ import { cn } from '@/shared/utils'
 import { View, ViewProps } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-interface ContainerProps extends ViewProps {
+interface CardProps extends ViewProps {
   /**
    * If true, applies padding to respect the device's safe area insets (notch, home indicator, etc.).
    * Useful for top-level screens or modals.
@@ -24,21 +24,21 @@ interface ContainerProps extends ViewProps {
  * A wrapper component that provides basic layout styling, including background color and padding.
  * It supports safe area handling and content centering via props.
  */
-export const Container = ({
+export const Card = ({
   children,
   className,
   shadow = false,
   safeArea = false,
   centered = false,
   ...props
-}: ContainerProps) => {
+}: CardProps) => {
   const insets = useSafeAreaInsets()
 
   return (
     <View
       className={cn(
-        'bg-background-white px-md rounded-2xl',
-        'border border-primary',
+        'bg-app-surface px-md rounded-2xl',
+        'border border-slate-700',
         centered && 'items-center justify-center',
         className,
       )}

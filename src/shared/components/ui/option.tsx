@@ -30,8 +30,8 @@ export const OptionCard: React.FC<OptionCardProps> = ({
       className={cn(
         'mb-4 w-full flex-row items-center rounded-2xl border p-3',
         isSelected
-          ? 'border-brand-primary bg-brand-primary/10'
-          : 'border-gray-200 dark:border-gray-700',
+          ? 'border-brand-blue bg-brand-blue/10'
+          : 'border-slate-700',
         disabled && 'opacity-50',
         className,
       )}
@@ -47,7 +47,7 @@ export const OptionCard: React.FC<OptionCardProps> = ({
           <Text
             className={cn(
               'text-lg',
-              isSelected ? 'font-medium text-brand-primary' : 'text-gray-800 dark:text-gray-200',
+              isSelected ? 'font-medium text-brand-blue' : 'text-slate-100',
               textClassName,
             )}
           >

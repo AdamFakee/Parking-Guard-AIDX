@@ -1,12 +1,13 @@
 import {
   AppHeader,
   Button,
-  Container,
+  Card,
   Input,
   LoadingIndicator,
   OptionCard,
   Placeholder,
 } from '@/shared/components/ui';
+import { COLORS } from '@/shared/constants';
 import { Bell, Home, Search, Star } from 'lucide-react-native';
 import { useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
@@ -17,17 +18,17 @@ export default function Index() {
 
   const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
     <View className="mb-6">
-      <Text className="text-heading font-bold text-primary mb-3">{title}</Text>
+      <Text className="text-sectionTitle font-bold text-brand-blue mb-3">{title}</Text>
       {children}
     </View>
   );
 
   return (
-    <View className="flex-1 bg-background-white">
-      {/* AppHeader - Gradient */}
+    <View className="flex-1 bg-app-darker">
+      {/* AppHeader - Standard */}
       <AppHeader
         title="UI Components Demo"
-        variant="gradient"
+        variant="surface"
         rightIcon={Bell}
         showLeftButton={false}
       />
@@ -50,19 +51,19 @@ export default function Index() {
         {/* ---------- APP HEADER VARIANTS ---------- */}
         <Section title="AppHeader">
           <View className="gap-3 overflow-hidden rounded-lg">
-            <Text className="text-desc text-text-secondary mb-1">Gradient Variant</Text>
+            <Text className="text-desc text-slate-400 mb-1">Surface (Default)</Text>
             <View className="overflow-hidden rounded-lg">
               <AppHeader
-                title="Gradient Header"
-                variant="gradient"
+                title="Surface Header"
+                variant="surface"
                 rightIcon={Bell}
               />
             </View>
-            <Text className="text-desc text-text-secondary mb-1 mt-2">White Variant</Text>
-            <View className="overflow-hidden rounded-lg border border-background-secondary">
+            <Text className="text-desc text-slate-400 mb-1 mt-2">Dark Variant</Text>
+            <View className="overflow-hidden rounded-lg border border-slate-700">
               <AppHeader
-                title="White Header"
-                variant="white"
+                title="Dark Header"
+                variant="dark"
                 rightIcon={Star}
                 showBorderBottom
               />
@@ -73,15 +74,15 @@ export default function Index() {
         {/* ---------- CONTAINER ---------- */}
         <Section title="Container">
           <View className="gap-3">
-            <Container>
-              <Text className="text-desc text-text-primary-black">Default Container</Text>
-            </Container>
-            <Container shadow>
-              <Text className="text-desc text-text-primary-black">Container with Shadow</Text>
-            </Container>
-            <Container centered className="h-16">
-              <Text className="text-desc text-text-primary-black">Centered Container</Text>
-            </Container>
+            <Card>
+              <Text className="text-mainContent text-slate-100">Default Container</Text>
+            </Card>
+            <Card shadow>
+              <Text className="text-mainContent text-slate-100">Container with Shadow</Text>
+            </Card>
+            <Card centered className="h-16">
+              <Text className="text-mainContent text-slate-100">Centered Container</Text>
+            </Card>
           </View>
         </Section>
 
@@ -112,7 +113,7 @@ export default function Index() {
               text={opt}
               isSelected={selectedOption === opt}
               onPress={() => setSelectedOption(opt)}
-              leftIcon={<Star size={20} color={selectedOption === opt ? '#9B0000' : '#707070'} />}
+              leftIcon={<Star size={20} color={selectedOption === opt ? COLORS.brand.blue : COLORS.slate[400]} />}
             />
           ))}
         </Section>
@@ -122,7 +123,7 @@ export default function Index() {
           <View className="flex-row gap-6 items-center">
             <LoadingIndicator size="small" />
             <LoadingIndicator size="large" />
-            <LoadingIndicator size="large" color="#9B0000" />
+            <LoadingIndicator size="large" color={COLORS.brand.orange} />
           </View>
         </Section>
 
