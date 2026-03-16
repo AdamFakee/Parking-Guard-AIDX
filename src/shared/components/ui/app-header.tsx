@@ -144,7 +144,7 @@ export const AppHeader = ({
       <View className="flex-1 items-center justify-center">
         {title && (
           <Text
-            className={'text-pageTitle text-center ' + textColorClass}
+            className={'text-medium text-center ' + textColorClass}
             numberOfLines={1}
           >
             {title}

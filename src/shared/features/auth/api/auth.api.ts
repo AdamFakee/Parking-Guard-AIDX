@@ -53,16 +53,19 @@ export const login = async (data: TLoginForm): Promise<LoginResponse> => {
                 id: 'staff_1',
                 pinHash: '1234',
                 role: 'admin',
+                name: 'staff1',
               },
               {
                 id: 'staff_2',
                 pinHash: '1234',
                 role: 'staff',
+                name: 'staff2',
               },
               {
                 id: 'staff_3',
                 pinHash: '1234',
                 role: 'staff',
+                name: 'staff3',
               },
             ],
             nfcCards: [

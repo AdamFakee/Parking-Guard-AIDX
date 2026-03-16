@@ -7,7 +7,8 @@ export const staff = sqliteTable('staff', {
   id: text('id')
     .primaryKey()
     .$defaultFn(() => generateUUID()), // UUID
-  pinHash: text('pin_hash').notNull().unique(),
+  name: text('name').notNull(),
+  pinHash: text('pin_hash').notNull(),
   role: text('role', { enum: ['admin', 'staff'] }).notNull(),
 })
 

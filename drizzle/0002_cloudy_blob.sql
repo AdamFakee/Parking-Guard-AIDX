@@ -1,0 +1,1 @@
+DROP INDEX `staff_pin_hash_unique`;

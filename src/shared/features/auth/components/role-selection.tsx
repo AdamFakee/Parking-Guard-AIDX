@@ -1,4 +1,5 @@
 import { COLORS } from '@/shared/constants';
+import { useRouter } from 'expo-router';
 import { ChevronRight, Crown, UserCircle } from 'lucide-react-native';
 import React from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
@@ -8,6 +9,8 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
  * Tailored to match the provided ParkGuard design.
  */
 export const RoleSelection = () => {
+  const router = useRouter();
+
   return (
     <View className="flex-1 bg-background-light items-center justify-center">
       <ScrollView 
@@ -49,6 +52,7 @@ export const RoleSelection = () => {
 
           {/* Staff Role Card */}
           <Pressable 
+            onPress={() => router.push('/(auth)/select-staff')}
             className="flex flex-col w-full rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm active:opacity-80 active:border-primary/50 transition-all"
           >
             <View className="flex-row items-center justify-between w-full mb-5">
