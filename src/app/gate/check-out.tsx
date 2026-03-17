@@ -1,6 +1,6 @@
-import { AppHeader } from '@/shared/components/ui';
+import { AppHeader, Button } from '@/shared/components/ui';
 import { COLORS, SHADOW } from '@/shared/constants/color.const';
-import { checkoutSchema, TCheckoutForm, TParkingEntry, useCheckOut, usePricingRules, useSystemConfig } from '@/shared/features/gate';
+import { checkoutSchema, QRPaymentModal, QRPaymentModalRef, TCheckoutForm, TParkingEntry, useCheckOut, usePricingRules, useSystemConfig } from '@/shared/features/gate';
 import { getActiveEntryByCard } from '@/shared/features/gate/apis/gate.api';
 import { SearchActiveEntryModal, SearchActiveEntryModalRef } from '@/shared/features/gate/components/search-active-entry-modal';
 import { calculateParkingPricing, checkPlateMatch } from '@/shared/features/gate/utils';
@@ -24,6 +24,8 @@ export default function CheckOutScreen() {
   const { data: pricingRules } = usePricingRules();
   
   const searchModalRef = useRef<SearchActiveEntryModalRef>(null);
+  const qrModalRef = useRef<QRPaymentModalRef>(null);
+  const [pendingFormData, setPendingFormData] = useState<TCheckoutForm | null>(null);
 
   const { control, handleSubmit, watch, setValue } = useForm<TCheckoutForm>({
     resolver: valibotResolver(checkoutSchema),
@@ -124,6 +126,17 @@ export default function CheckOutScreen() {
       );
     } else {
       finalize();
+    }
+  };
+
+  const triggerQRPayment = (data: TCheckoutForm) => {
+    setPendingFormData(data);
+    qrModalRef.current?.open(pricing.total, entry?.plateText);
+  };
+
+  const handleQRConfirm = () => {
+    if (pendingFormData) {
+      onConfirmCheckout(pendingFormData, 'qr_transfer');
     }
   };
 
@@ -314,29 +327,31 @@ export default function CheckOutScreen() {
       >
         <Text className="text-center text-[10px] font-bold text-slate-400 mb-4 uppercase tracking-[1.5px]">Phương thức thanh toán</Text>
         <View className="flex-row gap-3">
-          <Pressable 
+          <Button 
             disabled={!isFormValid || isPending}
+            loading={isPending}
             onPress={handleSubmit((data) => onConfirmCheckout(data, 'cash'))}
-            className={`flex-1 py-4 rounded-2xl items-center justify-center flex-row gap-2 ${!isFormValid || isPending ? 'bg-slate-200' : 'bg-green-500'}`}
-          >
-            <Wallet size={20} color="white" />
-            <Text className="text-white font-black uppercase text-xs">Tiền mặt</Text>
-          </Pressable>
+            label="TIỀN MẶT"
+            leftIcon={Wallet}
+            iconSize={20}
+            className={`flex-1 rounded-2xl h-14 border-0 ${!isFormValid || isPending ? 'bg-slate-200' : 'bg-green-500'}`}
+            textClassName="text-white font-black text-xs"
+          />
           
-          <Pressable 
+          <Button 
             disabled={!isFormValid || isPending}
-            onPress={handleSubmit((data) => onConfirmCheckout(data, 'qr_transfer'))}
-            className={`flex-1 py-4 rounded-2xl items-center justify-center flex-row gap-2 ${!isFormValid || isPending ? 'bg-slate-200' : 'bg-violet-500'}`}
-          >
-             <CheckCircle2 size={20} color="white" />
-            <Text className="text-white font-black uppercase text-xs">Chuyển khoản</Text>
-          </Pressable>
+            onPress={handleSubmit((data) => triggerQRPayment(data))}
+            label="CHUYỂN KHOẢN"
+            leftIcon={CheckCircle2}
+            iconSize={20}
+            className={`flex-1 rounded-2xl h-14 border-0 ${!isFormValid || isPending ? 'bg-slate-200' : 'bg-violet-500'}`}
+            textClassName="text-white font-black text-xs"
+          />
         </View>
-        
-        {isPending && <ActivityIndicator className="mt-4" color={COLORS.brand.blue} />}
       </View>
 
       <SearchActiveEntryModal ref={searchModalRef} onSelect={handleSelectEntry} />
+      <QRPaymentModal ref={qrModalRef} onConfirm={handleQRConfirm} isPending={isPending} />
     </View>
   );
 }
