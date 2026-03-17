@@ -75,7 +75,10 @@ export const Dashboard = () => {
         // Dynamically determine mode from DB
         const mode = await getCardStatus(tagUid);
         
-        router.push(`/gate/scan-plate?mode=${mode}&tagUid=${tagUid}` as any);
+        const params = new URLSearchParams({ mode });
+        if (tagUid) params.append('tagUid', tagUid);
+        
+        router.push(`/gate/scan-plate?${params.toString()}` as any);
       });
 
       return () => {

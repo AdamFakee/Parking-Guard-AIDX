@@ -14,12 +14,18 @@ export default function ScanPlateScreen() {
     const randomPlate = generateRandomPlate();
 
 
-    // Navigate to next screen based on gate mode
-    if (mode === 'out') {
-      router.replace(`/gate/check-out?tagUid=${tagUid}&image=${mockImage}&plate=${randomPlate}` as any);
-    } else {
-      router.replace(`/gate/check-in?tagUid=${tagUid}&image=${mockImage}&plate=${randomPlate}` as any);
+    const params = new URLSearchParams({
+      image: mockImage,
+      plate: randomPlate
+    });
+
+    if (tagUid && tagUid !== 'undefined') {
+      params.append('tagUid', tagUid);
     }
+
+    // Navigate to next screen based on gate mode
+    const path = mode === 'out' ? '/gate/check-out' : '/gate/check-in';
+    router.replace(`${path}?${params.toString()}` as any);
   };
 
   return (

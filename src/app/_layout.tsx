@@ -41,8 +41,8 @@ function useProtectedRoute() {
         router.replace('/(auth)/login');
       }
     } else if (!currentShift) {
-      // Đã đăng nhập nhưng chưa chọn ca -> redirect tới select-role
-      if (segments[1] !== 'select-role') {
+      // Đã đăng nhập nhưng chưa chọn ca -> cho phép di chuyển trong nhóm (auth) (ngoại trừ login)
+      if (!inAuthGroup || segments[1] === 'login') {
         router.replace('/(auth)/select-role');
       }
     } else {

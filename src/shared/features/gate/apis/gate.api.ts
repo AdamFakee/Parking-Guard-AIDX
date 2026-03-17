@@ -1,6 +1,6 @@
 import { db } from '@/shared/db';
 import * as schema from '@/shared/db/schemas';
-import { and, desc, eq, sql } from 'drizzle-orm';
+import { and, desc, eq, isNull, like, sql } from 'drizzle-orm';
 
 export const getDashboardStats = async (shiftId: string) => {
   // Count cars currently in yard
@@ -62,7 +62,7 @@ export const getCardStatus = async (cardUid: string) => {
 
 export type CheckInParams = {
   shiftId: string;
-  cardUid: string;
+  cardUid?: string;
   vehicleType: 'motorbike' | 'car' | 'ebike';
   plateText: string;
   photoIn1: string;
@@ -70,6 +70,8 @@ export type CheckInParams = {
 };
 
 export const checkIn = async (params: CheckInParams) => {
+  // Only update card status if a valid card UID is provided
+  if (params.cardUid) {
   await db.insert(schema.nfcCards)
     .values({
       uid: params.cardUid,
@@ -81,17 +83,99 @@ export const checkIn = async (params: CheckInParams) => {
       target: schema.nfcCards.uid,
       set: { status: 'using', updatedAt: new Date() }
     });
+  }
 
   return await db.insert(schema.parkingEntries).values({
     shiftId: params.shiftId,
-    cardUid: params.cardUid,
+    cardUid: (params.cardUid === 'undefined' ? null : params.cardUid) || null,
     vehicleType: params.vehicleType,
     plateText: params.plateText,
     photoIn1: params.photoIn1,
     photoIn2: params.photoIn2,
     entryTime: new Date(),
     status: 'IN',
-    manualInputIn: false,
+    manualInputIn: !params.cardUid || params.cardUid === 'undefined',
   });
 };
 
+export const searchActiveEntries = async (plate: string, onlyNoUid: boolean = false) => {
+
+  const conditions = [
+    eq(schema.parkingEntries.status, 'IN'),
+    like(schema.parkingEntries.plateText, `%${plate}%`),
+  ];
+
+  if (onlyNoUid) {
+    conditions.push(isNull(schema.parkingEntries.cardUid));
+  }
+
+  return await db
+    .select()
+    .from(schema.parkingEntries)
+    .where(and(...conditions))
+    .orderBy(desc(schema.parkingEntries.entryTime));
+};
+
+export const getActiveEntryByCard = async (cardUid: string) => {
+  const [entry] = await db
+    .select()
+    .from(schema.parkingEntries)
+    .where(
+      and(
+        eq(schema.parkingEntries.status, 'IN'),
+        eq(schema.parkingEntries.cardUid, cardUid)
+      )
+    )
+    .orderBy(desc(schema.parkingEntries.entryTime))
+    .limit(1);
+
+  return entry;
+};
+
+export type CheckOutParams = {
+  entryId: string;
+  cardUid?: string | null;
+  exitPlate: string;
+  photoOut1: string;
+  photoOut2: string;
+  feeAmount: number;
+  paymentMethod: 'cash' | 'qr_transfer';
+  isLostCard?: boolean;
+  mismatchReason?: string;
+  plateMatch: boolean;
+};
+
+export const checkOut = async (params: CheckOutParams) => {
+  // 1. Update card status to 'free' if present
+  if (params.cardUid && params.cardUid !== 'undefined') {
+    await db.update(schema.nfcCards)
+      .set({ status: 'free', updatedAt: new Date() })
+      .where(eq(schema.nfcCards.uid, params.cardUid));
+  }
+
+  // 2. Update parking entry
+  return await db.update(schema.parkingEntries)
+    .set({
+      exitTime: new Date(),
+      exitPlate: params.exitPlate,
+      photoOut1: params.photoOut1,
+      photoOut2: params.photoOut2,
+      plateMatch: params.plateMatch,
+      feeAmount: params.feeAmount,
+      paymentMethod: params.paymentMethod,
+      status: 'OUT',
+      isLostCard: params.isLostCard || false,
+      mismatchReason: params.mismatchReason || null,
+      manualInputOut: false,
+    })
+    .where(eq(schema.parkingEntries.id, params.entryId));
+};
+
+export const getSystemConfig = async () => {
+  const [config] = await db.select().from(schema.systemConfigs).limit(1);
+  return config;
+};
+
+export const getPricingRules = async () => {
+  return await db.select().from(schema.pricingRules);
+};

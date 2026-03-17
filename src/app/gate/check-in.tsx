@@ -31,11 +31,6 @@ export default function CheckInScreen() {
       return;
     }
 
-    if (!tagUid) {
-      Alert.alert('Lỗi', 'Vui lòng quét thẻ NFC trước');
-      return;
-    }
-
     performCheckIn({
       shiftId: currentShift.id,
       cardUid: tagUid,
