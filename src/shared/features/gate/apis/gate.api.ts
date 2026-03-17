@@ -213,3 +213,20 @@ export const deletePricingRule = async (id: string) => {
 export const createPricingRule = async (values: typeof schema.pricingRules.$inferInsert) => {
   return await db.insert(schema.pricingRules).values(values);
 };
+
+export const checkNfcCardUsage = async (uid: string) => {
+  const [card] = await db
+    .select()
+    .from(schema.nfcCards)
+    .where(eq(schema.nfcCards.uid, uid))
+    .limit(1);
+
+  if (!card) return { status: 'new' };
+  
+  return { 
+    status: 'existing', 
+    cardType: card.cardType,
+    cardStatus: card.status,
+    registeredPlate: card.registeredPlate
+  };
+};

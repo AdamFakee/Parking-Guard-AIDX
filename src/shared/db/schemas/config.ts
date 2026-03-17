@@ -10,6 +10,9 @@ export const systemConfigs = sqliteTable('system_configs', {
   accountNumber: text('account_number'),
   accountName: text('account_name'),
   qrImageUrl: text('qr_image_url'),
+  monthlyPriceMotorbike: integer('monthly_price_motorbike').default(100000),
+  monthlyPriceCar: integer('monthly_price_car').default(500000),
+  monthlyPriceEbike: integer('monthly_price_ebike').default(100000),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }),
 })
 

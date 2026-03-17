@@ -40,6 +40,21 @@ const ConfigSchema = v.object({
   accountNumber: v.string(),
   accountName: v.string(),
   qrImageUrl: v.string(),
+  monthlyPriceMotorbike: v.pipe(
+    v.string(),
+    v.regex(/^\d+$/, 'Vui lòng chỉ nhập số'),
+    v.transform((val) => Number(val))
+  ),
+  monthlyPriceCar: v.pipe(
+    v.string(),
+    v.regex(/^\d+$/, 'Vui lòng chỉ nhập số'),
+    v.transform((val) => Number(val))
+  ),
+  monthlyPriceEbike: v.pipe(
+    v.string(),
+    v.regex(/^\d+$/, 'Vui lòng chỉ nhập số'),
+    v.transform((val) => Number(val))
+  ),
 });
 
 const PricingRuleSchema = v.object({
@@ -159,6 +174,9 @@ export const SystemConfigModal = forwardRef<SystemConfigModalRef>((_, ref) => {
       accountNumber: '',
       accountName: '',
       qrImageUrl: '',
+      monthlyPriceMotorbike: 100000 as any,
+      monthlyPriceCar: 500000 as any,
+      monthlyPriceEbike: 100000 as any,
     },
   });
 
@@ -187,6 +205,9 @@ export const SystemConfigModal = forwardRef<SystemConfigModalRef>((_, ref) => {
         accountNumber: config.accountNumber || '',
         accountName: config.accountName || '',
         qrImageUrl: config.qrImageUrl || '',
+        monthlyPriceMotorbike: String(config.monthlyPriceMotorbike || 100000) as any,
+        monthlyPriceCar: String(config.monthlyPriceCar || 500000) as any,
+        monthlyPriceEbike: String(config.monthlyPriceEbike || 100000) as any,
       });
     }
   }, [config, resetConfig, visible]);
@@ -362,6 +383,40 @@ export const SystemConfigModal = forwardRef<SystemConfigModalRef>((_, ref) => {
                     label="Tên chủ tài khoản"
                     placeholder="Nhập tên không dấu..."
                     autoCapitalize="characters"
+                  />
+                </View>
+
+                {/* Monthly Ticket Prices */}
+                <View className="gap-4 mt-4">
+                  <Text className="text-sm font-bold text-slate-400 uppercase tracking-widest pl-1">Giá vé tháng (Mặc định)</Text>
+                  
+                  <View className="flex-row gap-4">
+                    <View className="flex-1">
+                      <ControlledInput
+                        control={control}
+                        name="monthlyPriceMotorbike"
+                        label="Xe máy (₫)"
+                        keyboardType="numeric"
+                        placeholder="100000"
+                      />
+                    </View>
+                    <View className="flex-1">
+                      <ControlledInput
+                        control={control}
+                        name="monthlyPriceEbike"
+                        label="Xe đạp điện (₫)"
+                        keyboardType="numeric"
+                        placeholder="100000"
+                      />
+                    </View>
+                  </View>
+
+                  <ControlledInput
+                    control={control}
+                    name="monthlyPriceCar"
+                    label="Xe ô tô (₫)"
+                    keyboardType="numeric"
+                    placeholder="500000"
                   />
                 </View>
 

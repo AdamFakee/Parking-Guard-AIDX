@@ -58,6 +58,27 @@ export const parkingEntries = sqliteTable(
   }),
 )
 
+// --- ĐĂNG KÝ THẺ THÁNG ---
+export const monthlySubscriptions = sqliteTable('monthly_subscriptions', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => generateUUID()),
+  cardUid: text('card_uid')
+    .notNull()
+    .references(() => nfcCards.uid),
+  customerName: text('customer_name').notNull(),
+  customerPhone: text('customer_phone'),
+  photoProfile: text('photo_profile'),
+  vehicleType: text('vehicle_type', { enum: ['motorbike', 'car', 'ebike'] }).notNull(),
+  vehiclePlate: text('vehicle_plate').notNull(),
+  startDate: integer('start_date', { mode: 'timestamp_ms' }).notNull(),
+  endDate: integer('end_date', { mode: 'timestamp_ms' }).notNull(),
+  price: integer('price').default(0),
+  status: text('status', { enum: ['active', 'expired', 'canceled'] }).default('active'),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' }),
+  synced: integer('synced', { mode: 'boolean' }).default(false),
+})
+
 // --- BIÊN BẢN MẤT THẺ ---
 export const lostCardReports = sqliteTable('lost_card_reports', {
   id: text('id')
@@ -88,5 +109,12 @@ export const parkingEntriesRelations = relations(parkingEntries, ({ one }) => ({
   lostReport: one(lostCardReports, {
     fields: [parkingEntries.id],
     references: [lostCardReports.entryId],
+  }),
+}))
+
+export const monthlySubscriptionsRelations = relations(monthlySubscriptions, ({ one }) => ({
+  card: one(nfcCards, {
+    fields: [monthlySubscriptions.cardUid],
+    references: [nfcCards.uid],
   }),
 }))

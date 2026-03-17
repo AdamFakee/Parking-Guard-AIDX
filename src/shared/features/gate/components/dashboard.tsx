@@ -3,7 +3,8 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import {
   LucideArrowLeftToLine,
   LucideArrowRightToLine,
-  LucideScanQrCode
+  LucideScanQrCode,
+  CreditCard
 } from 'lucide-react-native';
 import React, { useCallback, useEffect } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
@@ -207,20 +208,30 @@ export const Dashboard = () => {
         </View>
 
         {/* Manual Actions */}
-        <View className="px-6 pb-12 flex-row gap-4">
+        <View className="px-5 pb-10 gap-4">
+          <View className="flex-row gap-4">
+            <Pressable 
+              onPress={() => router.push('/gate/scan-plate?mode=in' as any)}
+              className="flex-1 flex-col items-center justify-center gap-2 py-5 bg-blue-500 rounded-2xl shadow-md active:scale-95"
+            >
+              <LucideArrowRightToLine size={24} color="white" />
+              <Text className="text-white font-bold text-xs">VÀO</Text>
+            </Pressable>
+            <Pressable 
+              onPress={() => router.push('/gate/scan-plate?mode=out' as any)}
+              className="flex-1 flex-col items-center justify-center gap-2 py-5 bg-orange-500 rounded-2xl shadow-md active:scale-95"
+            >
+              <LucideArrowLeftToLine size={24} color="white" />
+              <Text className="text-white font-bold text-xs">RA</Text>
+            </Pressable>
+          </View>
+          
           <Pressable 
-            onPress={() => router.push('/gate/scan-plate?mode=in' as any)}
-            className="flex-1 flex-col items-center justify-center gap-2 py-4 bg-blue-500 rounded-lg shadow-md active:scale-95"
+            onPress={() => router.push('/gate/monthly-register' as any)}
+            className="flex-row items-center justify-center gap-3 py-4 bg-slate-800 rounded-2xl shadow-md active:scale-95 border border-slate-700"
           >
-            <LucideArrowRightToLine size={24} color="white" />
-            <Text className="text-white font-bold">XE VÀO</Text>
-          </Pressable>
-          <Pressable 
-            onPress={() => router.push('/gate/scan-plate?mode=out' as any)}
-            className="flex-1 flex-col items-center justify-center gap-2 py-4 bg-orange-500 rounded-lg shadow-md active:scale-95"
-          >
-            <LucideArrowLeftToLine size={24} color="white" />
-            <Text className="text-white font-bold">XE RA</Text>
+            <CreditCard size={20} color="#3B82F6" />
+            <Text className="text-white font-bold uppercase tracking-wider">Đăng ký thẻ tháng</Text>
           </Pressable>
         </View>
       </ScrollView>
