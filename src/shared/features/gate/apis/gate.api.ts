@@ -194,3 +194,22 @@ export const getSystemConfig = async () => {
 export const getPricingRules = async () => {
   return await db.select().from(schema.pricingRules);
 };
+export const updateSystemConfig = async (id: number, values: Partial<typeof schema.systemConfigs.$inferInsert>) => {
+  return await db.update(schema.systemConfigs)
+    .set({ ...values, updatedAt: new Date() })
+    .where(eq(schema.systemConfigs.id, id));
+};
+
+export const updatePricingRule = async (id: string, values: Partial<typeof schema.pricingRules.$inferInsert>) => {
+  return await db.update(schema.pricingRules)
+    .set(values)
+    .where(eq(schema.pricingRules.id, id));
+};
+
+export const deletePricingRule = async (id: string) => {
+  return await db.delete(schema.pricingRules).where(eq(schema.pricingRules.id, id));
+};
+
+export const createPricingRule = async (values: typeof schema.pricingRules.$inferInsert) => {
+  return await db.insert(schema.pricingRules).values(values);
+};

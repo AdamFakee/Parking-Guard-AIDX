@@ -30,6 +30,7 @@ export const RoleSelection = () => {
         <View className="flex flex-col gap-5 mt-4">
           {/* Owner Role Card */}
           <Pressable 
+            onPress={() => router.push({ pathname: '/(auth)/select-staff', params: { role: 'admin' } })}
             className="flex flex-col w-full rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm active:opacity-80 active:border-primary/50 transition-all"
           >
             <View className="flex-row items-center justify-between w-full mb-5">
@@ -52,7 +53,7 @@ export const RoleSelection = () => {
 
           {/* Staff Role Card */}
           <Pressable 
-            onPress={() => router.push('/(auth)/select-staff')}
+            onPress={() => router.push({ pathname: '/(auth)/select-staff', params: { role: 'staff' } })}
             className="flex flex-col w-full rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm active:opacity-80 active:border-primary/50 transition-all"
           >
             <View className="flex-row items-center justify-between w-full mb-5">

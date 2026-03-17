@@ -1,5 +1,5 @@
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
-import { checkIn, CheckInParams, checkOut, CheckOutParams, getPricingRules, getSystemConfig } from '../apis/gate.api';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { checkIn, CheckInParams, checkOut, CheckOutParams } from '../apis/gate.api';
 
 export function useCheckIn() {
   const queryClient = useQueryClient();
@@ -25,16 +25,4 @@ export function useCheckOut() {
   });
 }
 
-export function useSystemConfig() {
-  return useQuery({
-    queryKey: ['system-config'],
-    queryFn: getSystemConfig,
-  });
-}
 
-export function usePricingRules() {
-  return useQuery({
-    queryKey: ['pricing-rules'],
-    queryFn: getPricingRules,
-  });
-}

@@ -1,5 +1,7 @@
 import { StaffProfileSelection } from '@/shared/features/shift/components';
+import { useLocalSearchParams } from 'expo-router';
 
 export default function SelectStaffScreen() {
-  return <StaffProfileSelection />;
+  const { role } = useLocalSearchParams<{ role: 'admin' | 'staff' }>();
+  return <StaffProfileSelection role={role || 'staff'} />;
 }

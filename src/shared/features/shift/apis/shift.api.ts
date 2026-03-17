@@ -51,3 +51,12 @@ export const closeShift = async (params: {
     .where(eq(schema.shifts.id, params.shiftId))
     .returning();
 };
+
+export const getShiftHistory = async () => {
+  return await db.query.shifts.findMany({
+    with: {
+      staff: true,
+    },
+    orderBy: (shifts, { desc }) => [desc(shifts.startTime)],
+  });
+};

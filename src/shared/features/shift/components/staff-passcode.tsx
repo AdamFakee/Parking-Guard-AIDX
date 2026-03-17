@@ -43,10 +43,10 @@ export const StaffPasscode = () => {
       verifyPin(
         { staffId: staffId as string, passcode },
         {
-          onSuccess: () => {
+          onSuccess: (data) => {
              router.replace({
                pathname: '/start-shift',
-               params: { staffId, name, avatar }
+               params: { staffId, name, avatar, role: data.role }
              });
           },
           onError: (err: any) => {

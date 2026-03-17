@@ -9,6 +9,7 @@ export interface ShiftData {
   openingCash: number
   startTime: string
   status: 'open' | 'closed'
+  role: 'admin' | 'staff'
 }
 
 export interface ShiftState {

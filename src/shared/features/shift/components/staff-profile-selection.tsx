@@ -15,9 +15,9 @@ import { useGetAllStaff } from '../hooks';
  * StaffProfileSelection component allows picking a staff profile from a list or scanning a code.
  * Matches the provided HTML mockup design.
  */
-export const StaffProfileSelection = () => {
+export const StaffProfileSelection = ({ role = 'staff' }: { role?: 'admin' | 'staff' }) => {
   const router = useRouter();
-  const { data: staffList, isLoading } = useGetAllStaff('staff');
+  const { data: staffList, isLoading } = useGetAllStaff(role);
 
   // For UI demo purposes, we still use some static data or defaults since the DB only has name/role
   const getAvatar = (name: string) => {

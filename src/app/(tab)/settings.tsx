@@ -3,9 +3,13 @@ import { CloseShiftModal, CloseShiftModalRef } from '@/shared/features/shift/com
 import { useShiftStore } from '@/shared/features/shift';
 import { useAuthStore } from '@/shared/store';
 import { useRouter } from 'expo-router';
+import { SystemConfigModal, SystemConfigModalRef } from '@/shared/features/gate/components';
+import { ShiftHistoryModal, ShiftHistoryModalRef } from '@/shared/features/shift/components';
 import {
   LogOut,
-  User
+  Settings2,
+  User,
+  History
 } from 'lucide-react-native';
 import React, { useRef } from 'react';
 import {
@@ -20,8 +24,10 @@ export default function SettingsScreen() {
   const logoutAuth = useAuthStore((state) => state.logout);
   const { currentShift } = useShiftStore();
   const modalRef = useRef<CloseShiftModalRef>(null);
+  const configModalRef = useRef<SystemConfigModalRef>(null);
+  const historyModalRef = useRef<ShiftHistoryModalRef>(null);
   
-  const isStaff = currentShift?.staffName?.toLowerCase().includes('staff') || true;
+  const isStaff = currentShift?.role === 'staff';
   const openingCash = currentShift?.openingCash || 0;
 
   const handleLogoutAdmin = () => {
@@ -80,6 +86,26 @@ export default function SettingsScreen() {
           </View>
         )}
 
+        {/* Admin Settings */}
+        {!isStaff && (
+          <View className="bg-white rounded-xl border border-slate-100 overflow-hidden shadow-sm mb-4">
+            <Button
+              label="Cấu hình hệ thống"
+              variant="outline"
+              className="border-b border-slate-100 rounded-none h-14"
+              leftIcon={Settings2}
+              onPress={() => configModalRef.current?.open()}
+            />
+            <Button
+              label="Lịch sử ca làm"
+              variant="outline"
+              className="border-0 rounded-none h-14"
+              leftIcon={History}
+              onPress={() => historyModalRef.current?.open()}
+            />
+          </View>
+        )}
+
         {/* Actions */}
         <View className="bg-white rounded-xl border border-slate-100 overflow-hidden shadow-sm mb-6">
           <Button
@@ -95,6 +121,8 @@ export default function SettingsScreen() {
 
       {/* RA CA MODAL - Managed via Ref */}
       <CloseShiftModal ref={modalRef} />
+      <SystemConfigModal ref={configModalRef} />
+      <ShiftHistoryModal ref={historyModalRef} />
     </View>
   );
 }

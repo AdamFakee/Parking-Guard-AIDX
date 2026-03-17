@@ -16,7 +16,7 @@ import { useShiftStore } from '../store';
 
 export const StartShift = () => {
   const router = useRouter();
-  const { staffId, name } = useLocalSearchParams<{ staffId: string; name: string }>();
+  const { staffId, name, role } = useLocalSearchParams<{ staffId: string; name: string; role: 'admin' | 'staff' }>();
   const [openingCash, setOpeningCash] = useState('');
   
   const { mutate: startShift, isPending } = useStartShift();
@@ -38,6 +38,7 @@ export const StartShift = () => {
             openingCash: data.openingCash,
             startTime: data.startTime.toISOString(),
             status: data.status as 'open' | 'closed',
+            role: role || 'staff',
           });
           
           // Navigate to main tabs after starting shift
