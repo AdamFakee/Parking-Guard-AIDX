@@ -9,6 +9,7 @@ import { StatusBar } from 'expo-status-bar'
 import { useEffect } from 'react'
 import { ErrorBoundary } from 'react-error-boundary'
 import { AppState, Text, View } from 'react-native'
+import { KeyboardProvider } from 'react-native-keyboard-controller'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 import { useShiftStore } from '@/shared/features/shift'
@@ -95,17 +96,19 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <QueryClientProvider client={queryClient}>
-        <StatusBar style="dark" />
+      <KeyboardProvider>
+        <QueryClientProvider client={queryClient}>
+          <StatusBar style="dark" />
 
-        <ErrorBoundary 
-          FallbackComponent={ErrorFallback}
-          onReset={() => {
-          }}
-        >
-          <RootLayoutNav />
-        </ErrorBoundary>
-      </QueryClientProvider>
+          <ErrorBoundary 
+            FallbackComponent={ErrorFallback}
+            onReset={() => {
+            }}
+          >
+            <RootLayoutNav />
+          </ErrorBoundary>
+        </QueryClientProvider>
+      </KeyboardProvider>
     </SafeAreaProvider>
   )
-}
+}

@@ -29,3 +29,25 @@ export const getActiveShift = async (staffId: string) => {
     .limit(1);
   return activeShift;
 };
+export const closeShift = async (params: {
+  shiftId: string;
+  actualCash: number;
+  expectedCash: number;
+  cashRevenue: number;
+  qrRevenue: number;
+  discrepancyReason?: string;
+}) => {
+  return await db
+    .update(schema.shifts)
+    .set({
+      endTime: new Date(),
+      status: 'closed',
+      actualCash: params.actualCash,
+      expectedCash: params.expectedCash,
+      cashRevenue: params.cashRevenue,
+      qrRevenue: params.qrRevenue,
+      discrepancyReason: params.discrepancyReason || null,
+    })
+    .where(eq(schema.shifts.id, params.shiftId))
+    .returning();
+};

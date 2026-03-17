@@ -26,14 +26,27 @@ export const getDashboardStats = async (shiftId: string) => {
       )
     );
 
-  // Total revenue in this shift
-  const [shiftRevenue] = await db
+  // Cash revenue in this shift
+  const [cashRevenue] = await db
     .select({ total: sql<number>`sum(${schema.parkingEntries.feeAmount})` })
     .from(schema.parkingEntries)
     .where(
       and(
         eq(schema.parkingEntries.shiftId, shiftId),
-        eq(schema.parkingEntries.status, 'OUT')
+        eq(schema.parkingEntries.status, 'OUT'),
+        eq(schema.parkingEntries.paymentMethod, 'cash')
+      )
+    );
+
+  // QR revenue in this shift
+  const [qrRevenue] = await db
+    .select({ total: sql<number>`sum(${schema.parkingEntries.feeAmount})` })
+    .from(schema.parkingEntries)
+    .where(
+      and(
+        eq(schema.parkingEntries.shiftId, shiftId),
+        eq(schema.parkingEntries.status, 'OUT'),
+        eq(schema.parkingEntries.paymentMethod, 'qr_transfer')
       )
     );
 
@@ -41,7 +54,9 @@ export const getDashboardStats = async (shiftId: string) => {
     inYard: inYardCount?.count || 0,
     entries: shiftEntryCount?.count || 0,
     exits: shiftExitCount?.count || 0,
-    revenue: shiftRevenue?.total || 0,
+    revenue: (cashRevenue?.total || 0) + (qrRevenue?.total || 0),
+    cashRevenue: cashRevenue?.total || 0,
+    qrRevenue: qrRevenue?.total || 0,
   };
 };
 
