@@ -13,7 +13,11 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.anonymous.learningexpo",
       "entitlements": {
-        "com.apple.developer.networking.wifi-info": true
+        "com.apple.developer.networking.wifi-info": true,
+        "com.apple.developer.nfc.readersession.formats": ["NDEF", "TAG"]
+      },
+      "infoPlist": {
+        "NFCReaderUsageDescription": "Cho phép ứng dụng sử dụng NFC để quét thẻ gửi xe."
       }
     },
     "android": {
@@ -25,10 +29,12 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.learningexpo"
+      "package": "com.anonymous.learningexpo",
+      "permissions": ["NFC"]
     },
     "plugins": [
       "expo-router",
+      "react-native-nfc-manager",
       [
         "expo-splash-screen",
         {

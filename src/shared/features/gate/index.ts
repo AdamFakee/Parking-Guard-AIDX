@@ -1,3 +1,6 @@
-export * from './apis/gate.api';
-export * from './hooks/index';
-export * from './components/index';
+export * from './apis';
+export * from './components';
+export * from './hooks';
+export * from './types';
+export * from './utils';
+

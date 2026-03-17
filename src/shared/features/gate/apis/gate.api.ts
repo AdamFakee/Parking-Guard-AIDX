@@ -1,6 +1,6 @@
 import { db } from '@/shared/db';
 import * as schema from '@/shared/db/schemas';
-import { eq, and, sql } from 'drizzle-orm';
+import { and, desc, eq, sql } from 'drizzle-orm';
 
 export const getDashboardStats = async (shiftId: string) => {
   // Count cars currently in yard
@@ -44,3 +44,54 @@ export const getDashboardStats = async (shiftId: string) => {
     revenue: shiftRevenue?.total || 0,
   };
 };
+
+export const getCardStatus = async (cardUid: string) => {
+  const [latestEntry] = await db
+    .select()
+    .from(schema.parkingEntries)
+    .where(eq(schema.parkingEntries.cardUid, cardUid))
+    .orderBy(desc(schema.parkingEntries.entryTime))
+    .limit(1);
+
+  if (!latestEntry || latestEntry.status === 'OUT' || latestEntry.status === 'VOID') {
+    return 'in'; // Next action is Check-In
+  }
+  
+  return 'out'; // Next action is Check-Out
+};
+
+export type CheckInParams = {
+  shiftId: string;
+  cardUid: string;
+  vehicleType: 'motorbike' | 'car' | 'ebike';
+  plateText: string;
+  photoIn1: string;
+  photoIn2: string;
+};
+
+export const checkIn = async (params: CheckInParams) => {
+  await db.insert(schema.nfcCards)
+    .values({
+      uid: params.cardUid,
+      cardType: 'luot',
+      status: 'using',
+      updatedAt: new Date(),
+    })
+    .onConflictDoUpdate({
+      target: schema.nfcCards.uid,
+      set: { status: 'using', updatedAt: new Date() }
+    });
+
+  return await db.insert(schema.parkingEntries).values({
+    shiftId: params.shiftId,
+    cardUid: params.cardUid,
+    vehicleType: params.vehicleType,
+    plateText: params.plateText,
+    photoIn1: params.photoIn1,
+    photoIn2: params.photoIn2,
+    entryTime: new Date(),
+    status: 'IN',
+    manualInputIn: false,
+  });
+};
+

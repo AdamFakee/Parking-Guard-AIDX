@@ -8253,6 +8253,11 @@ react-native-mmkv@^4.1.0:
   resolved "https://registry.npmjs.org/react-native-mmkv/-/react-native-mmkv-4.1.0.tgz"
   integrity sha512-ia76WnU6dkLZxFkSSflxqFgHT2pIaML763aucEu7nMglF41oEWTdTtBu0o8a1cxbhZOaONk6KF8RQp5fLvPitA==
 
+react-native-nfc-manager@^3.17.2:
+  version "3.17.2"
+  resolved "https://registry.yarnpkg.com/react-native-nfc-manager/-/react-native-nfc-manager-3.17.2.tgz#81924946b7fe381bbf85bfb16af90cb05cac4944"
+  integrity sha512-0NryP/Iw2hzw4MVH5KCngoRerNUrnRok6VfLrlFcFZRKyTQ7KTgpsdDxCB6cR33qYNyEDrWGBayfAI+ym5gt8Q==
+
 react-native-nitro-modules@^0.33.9:
   version "0.33.9"
   resolved "https://registry.npmjs.org/react-native-nitro-modules/-/react-native-nitro-modules-0.33.9.tgz"

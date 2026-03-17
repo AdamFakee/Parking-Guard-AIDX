@@ -4,7 +4,7 @@ import { onAppStateChange, queryClient, setupReactQueryMobile, useDevTools } fro
 import { useAuthStore } from '@/shared/store/useAuthStore'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { useMigrations } from 'drizzle-orm/expo-sqlite/migrator'
-import { Stack, useRouter } from 'expo-router'
+import { Stack, useRootNavigationState, useRouter, useSegments } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { useEffect } from 'react'
 import { ErrorBoundary } from 'react-error-boundary'
@@ -17,32 +17,64 @@ import './global.css'
 
 setupReactQueryMobile()
 
+/**
+ * Hook xử lý redirect dựa trên auth state.
+ * Phải được gọi bên trong component con của NavigationContainer (Stack).
+ */
+function useProtectedRoute() {
+  const { isAuthenticated, _hasHydrated: authHydrated } = useAuthStore();
+  const { currentShift, _hasHydrated: shiftHydrated } = useShiftStore();
+  const segments = useSegments();
+  const router = useRouter();
+  const navigationState = useRootNavigationState();
+
+  useEffect(() => {
+    // Đợi navigation mount xong
+    if (!navigationState?.key) return;
+    if (!authHydrated || !shiftHydrated) return;
+
+    const inAuthGroup = segments[0] === '(auth)';
+
+    if (!isAuthenticated) {
+      // Chưa đăng nhập -> redirect tới login
+      if (!inAuthGroup) {
+        router.replace('/(auth)/login');
+      }
+    } else if (!currentShift) {
+      // Đã đăng nhập nhưng chưa chọn ca -> redirect tới select-role
+      if (segments[1] !== 'select-role') {
+        router.replace('/(auth)/select-role');
+      }
+    } else {
+      // Đã đăng nhập + có ca -> thoát auth group nếu đang ở đó
+      if (inAuthGroup) {
+        router.replace('/');
+      }
+    }
+  }, [navigationState?.key, authHydrated, shiftHydrated, isAuthenticated, currentShift, segments, router]);
+}
+
+function RootLayoutNav() {
+  useProtectedRoute();
+
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="(tab)" />
+      <Stack.Screen name="(auth)" />
+      <Stack.Screen name="gate" />
+    </Stack>
+  );
+}
+
 export default function RootLayout() {
   useDevTools(queryClient);
 
-  const { isAuthenticated, _hasHydrated: authHydrated } = useAuthStore();
-  const { currentShift, _hasHydrated: shiftHydrated } = useShiftStore();
-  const router = useRouter();
   const { success, error } = useMigrations(db, migrations);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', onAppStateChange)
     return () => subscription.remove()
   }, [])
-
-  useEffect(() => {
-    if (!success || !authHydrated || !shiftHydrated) return;
-
-    if (isAuthenticated) {
-      if (currentShift) {
-        router.replace('/(tab)');
-      } else {
-        router.replace('/(auth)/select-role');
-      }
-    } else {
-      router.replace('/(auth)');
-    }
-  }, [success, authHydrated, shiftHydrated, isAuthenticated, currentShift, router]);
 
   if (error) {
     return (
@@ -71,10 +103,7 @@ export default function RootLayout() {
           onReset={() => {
           }}
         >
-          <Stack screenOptions={{ headerShown: false, }}>
-            <Stack.Screen name="(auth)" />
-            <Stack.Screen name="(tab)" />
-          </Stack>
+          <RootLayoutNav />
         </ErrorBoundary>
       </QueryClientProvider>
     </SafeAreaProvider>

@@ -1,10 +1,11 @@
 import { useShiftStore } from '@/shared/features/shift';
+import { useFocusEffect, useRouter } from 'expo-router';
 import {
   LucideArrowLeftToLine,
   LucideArrowRightToLine,
   LucideScanQrCode
 } from 'lucide-react-native';
-import React, { useEffect } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import Animated, {
   Easing,
@@ -14,7 +15,8 @@ import Animated, {
   withRepeat,
   withTiming
 } from 'react-native-reanimated';
-import { useDashboardStats } from '../hooks';
+import { getCardStatus } from '../apis/gate.api';
+import { useDashboardStats, useNfc } from '../hooks';
 
 const PulseRing = ({ delay = 0 }: { delay?: number }) => {
   const scale = useSharedValue(0.33);
@@ -55,8 +57,37 @@ const PulseRing = ({ delay = 0 }: { delay?: number }) => {
 export const Dashboard = () => {
   const { currentShift } = useShiftStore();
   const { data: stats } = useDashboardStats(currentShift?.id);
+  const { startListening, stopListening, isReading } = useNfc();
+  const router = useRouter();
 
   const coreScale = useSharedValue(0.95);
+
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+
+      startListening(async (tag) => {
+        if (!isActive) return;
+        
+        const tagUid = tag?.id || '';
+        if (!tagUid) return;
+        
+        // Dynamically determine mode from DB
+        const mode = await getCardStatus(tagUid);
+        
+        router.push(`/gate/scan-plate?mode=${mode}&tagUid=${tagUid}` as any);
+      });
+
+      return () => {
+        isActive = false;
+        stopListening();
+      };
+    }, [startListening, stopListening, router])
+  );
+
+  const handleNfcRead = () => {
+    // Left for manual click fallback but functionally replaced by auto-scan
+  };
 
   useEffect(() => {
     coreScale.value = withRepeat(
@@ -146,34 +177,45 @@ export const Dashboard = () => {
 
         {/* Interaction Area */}
         <View className="items-center justify-center py-12 px-6">
-          <View className="size-[100px] items-center justify-center relative">
+          <Pressable 
+            onPress={handleNfcRead}
+            disabled={isReading}
+            className="size-[100px] items-center justify-center relative"
+          >
             <PulseRing delay={0} />
             <PulseRing delay={1000} />
             <PulseRing delay={2000} />
             
             <Animated.View 
               style={coreAnimatedStyle}
-              className="z-10 size-44 rounded-full bg-white shadow-xl shadow-blue-500/20 items-center justify-center border border-blue-500/10"
+              className={`z-10 size-44 rounded-full bg-white shadow-xl shadow-blue-500/20 items-center justify-center border border-blue-500/10 ${isReading ? 'opacity-50' : ''}`}
             >
               <View className="size-32 bg-blue-500 rounded-full items-center justify-center shadow-lg">
                 <LucideScanQrCode size={64} color="white" strokeWidth={1.5} />
               </View>
             </Animated.View>
-          </View>
+          </Pressable>
 
           <View className="mt-8 items-center">
-            <Text className="text-xl font-black text-slate-900 tracking-tight">CHẠM THẺ NFC</Text>
-            <Text className="text-slate-400 font-bold text-xs mt-1 uppercase">Để xe vào / ra</Text>
+            <Text className="text-xl font-black text-slate-900 tracking-tight">
+              {'CHẠM THẺ NFC'}
+            </Text>
           </View>
         </View>
 
         {/* Manual Actions */}
         <View className="px-6 pb-12 flex-row gap-4">
-          <Pressable className="flex-1 flex-col items-center justify-center gap-2 py-4 bg-blue-500 rounded-lg shadow-md active:scale-95">
+          <Pressable 
+            onPress={() => router.push('/gate/scan-plate?mode=in' as any)}
+            className="flex-1 flex-col items-center justify-center gap-2 py-4 bg-blue-500 rounded-lg shadow-md active:scale-95"
+          >
             <LucideArrowRightToLine size={24} color="white" />
             <Text className="text-white font-bold">XE VÀO</Text>
           </Pressable>
-          <Pressable className="flex-1 flex-col items-center justify-center gap-2 py-4 bg-orange-500 rounded-lg shadow-md active:scale-95">
+          <Pressable 
+            onPress={() => router.push('/gate/scan-plate?mode=out' as any)}
+            className="flex-1 flex-col items-center justify-center gap-2 py-4 bg-orange-500 rounded-lg shadow-md active:scale-95"
+          >
             <LucideArrowLeftToLine size={24} color="white" />
             <Text className="text-white font-bold">XE RA</Text>
           </Pressable>
