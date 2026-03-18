@@ -1,6 +1,7 @@
 import { AppHeader, Button } from '@/shared/components/ui';
 import { COLORS, SHADOW } from '@/shared/constants/color.const';
 import { checkoutSchema, QRPaymentModal, QRPaymentModalRef, TCheckoutForm, TParkingEntry, useCheckOut, usePricingRules, useSystemConfig } from '@/shared/features/gate';
+import { useShiftStore } from '@/shared/features/shift';
 import { checkNfcCardUsage, getActiveEntryByCard } from '@/shared/features/gate/apis/gate.api';
 import { SearchActiveEntryModal, SearchActiveEntryModalRef } from '@/shared/features/gate/components/search-active-entry-modal';
 import { calculateParkingPricing, checkPlateMatch } from '@/shared/features/gate/utils';
@@ -17,6 +18,7 @@ export default function CheckOutScreen() {
   
   const [loading, setLoading] = useState(true);
   const [entry, setEntry] = useState<TParkingEntry | null>(null);
+  const { currentShift } = useShiftStore();
   const { mutate: performCheckOut, isPending } = useCheckOut();
   
   const { data: sysConfig } = useSystemConfig();
@@ -128,11 +130,15 @@ export default function CheckOutScreen() {
   }, [entry, isLostCard, sysConfig, pricingRules, isMonthly, monthlyInfo]);
 
   const onConfirmCheckout = (data: TCheckoutForm, paymentMethod: 'cash' | 'qr_transfer') => {
-    if (!entry) return;
+    if (!entry || !currentShift?.id) {
+      if (!currentShift?.id) Alert.alert("Lỗi", "Không tìm thấy phiên làm việc hiện tại");
+      return;
+    }
 
     const finalize = () => {
       performCheckOut({
         entryId: entry.id,
+        shiftId: currentShift.id,
         cardUid: tagUid && tagUid !== 'undefined' ? tagUid : entry.cardUid,
         exitPlate: outPlate || entry.plateText,
         photoOut1: outImage || '',

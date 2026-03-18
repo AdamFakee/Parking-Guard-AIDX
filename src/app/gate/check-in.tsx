@@ -63,7 +63,7 @@ export default function CheckInScreen() {
     }
 
     performCheckIn({
-      shiftId: currentShift.id,
+      entryShiftId: currentShift.id,
       cardUid: tagUid,
       vehicleType,
       plateText,

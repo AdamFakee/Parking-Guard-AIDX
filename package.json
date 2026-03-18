@@ -9,11 +9,15 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "test": "jest --watchAll",
+
     "// --- BUILD LOCAL --- //": "",
     "prebuild": "npx expo prebuild --platform android",
     "build:apk:local": "npm run prebuild && cd android && ./gradlew assembleRelease",
     "build:apk:local:clean": "rimraf android && npm run build:apk:local",
-    "build:aab:local": "npm run prebuild && cd android && ./gradlew bundleRelease"
+    "build:aab:local": "npm run prebuild && cd android && ./gradlew bundleRelease",
+
+    "// --- TOOLS --- //": "",
+    "local:db:generate": "drizzle-kit generate"
   },
   "dependencies": {
     "@dev-plugins/react-query": "^0.4.0",

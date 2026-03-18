@@ -19,9 +19,15 @@ export const shiftsRelations = relations(shifts, ({ one, many }) => ({
 
 // --- QUAN HỆ CỔNG ---
 export const parkingEntriesRelations = relations(parkingEntries, ({ one }) => ({
-  shift: one(shifts, {
-    fields: [parkingEntries.shiftId],
+  entryShift: one(shifts, {
+    fields: [parkingEntries.entryShiftId],
     references: [shifts.id],
+    relationName: 'entry_shift',
+  }),
+  exitShift: one(shifts, {
+    fields: [parkingEntries.exitShiftId],
+    references: [shifts.id],
+    relationName: 'exit_shift',
   }),
   card: one(nfcCards, {
     fields: [parkingEntries.cardUid],

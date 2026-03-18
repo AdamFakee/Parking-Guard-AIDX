@@ -19,8 +19,10 @@ export const parkingEntries = sqliteTable(
     id: text('id')
       .primaryKey()
       .$defaultFn(() => generateUUID()),
-    shiftId: text('shift_id')
+    entryShiftId: text('entry_shift_id')
       .notNull()
+      .references(() => shifts.id),
+    exitShiftId: text('exit_shift_id')
       .references(() => shifts.id),
     cardUid: text('card_uid').references(() => nfcCards.uid),
     vehicleType: text('vehicle_type', { enum: ['motorbike', 'car', 'ebike'] }).notNull(),

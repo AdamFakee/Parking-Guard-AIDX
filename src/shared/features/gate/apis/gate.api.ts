@@ -13,7 +13,7 @@ export const getDashboardStats = async (shiftId: string) => {
   const [shiftEntryCount] = await db
     .select({ count: sql<number>`count(*)` })
     .from(schema.parkingEntries)
-    .where(eq(schema.parkingEntries.shiftId, shiftId));
+    .where(eq(schema.parkingEntries.entryShiftId, shiftId));
 
   // Count exits in this shift
   const [shiftExitCount] = await db
@@ -21,7 +21,7 @@ export const getDashboardStats = async (shiftId: string) => {
     .from(schema.parkingEntries)
     .where(
       and(
-        eq(schema.parkingEntries.shiftId, shiftId),
+        eq(schema.parkingEntries.exitShiftId, shiftId),
         eq(schema.parkingEntries.status, 'OUT')
       )
     );
@@ -32,7 +32,7 @@ export const getDashboardStats = async (shiftId: string) => {
     .from(schema.parkingEntries)
     .where(
       and(
-        eq(schema.parkingEntries.shiftId, shiftId),
+        eq(schema.parkingEntries.exitShiftId, shiftId),
         eq(schema.parkingEntries.status, 'OUT'),
         eq(schema.parkingEntries.paymentMethod, 'cash')
       )
@@ -44,7 +44,7 @@ export const getDashboardStats = async (shiftId: string) => {
     .from(schema.parkingEntries)
     .where(
       and(
-        eq(schema.parkingEntries.shiftId, shiftId),
+        eq(schema.parkingEntries.exitShiftId, shiftId),
         eq(schema.parkingEntries.status, 'OUT'),
         eq(schema.parkingEntries.paymentMethod, 'qr_transfer')
       )
@@ -140,7 +140,7 @@ export const convertToRegularTicket = async (cardUid: string) => {
 };
 
 export type CheckInParams = {
-  shiftId: string;
+  entryShiftId: string;
   cardUid?: string;
   vehicleType: 'motorbike' | 'car' | 'ebike';
   plateText: string;
@@ -165,7 +165,7 @@ export const checkIn = async (params: CheckInParams) => {
   }
 
   return await db.insert(schema.parkingEntries).values({
-    shiftId: params.shiftId,
+    entryShiftId: params.entryShiftId,
     cardUid: (params.cardUid === 'undefined' ? null : params.cardUid) || null,
     vehicleType: params.vehicleType,
     plateText: params.plateText,
@@ -213,6 +213,7 @@ export const getActiveEntryByCard = async (cardUid: string) => {
 
 export type CheckOutParams = {
   entryId: string;
+  shiftId: string;
   cardUid?: string | null;
   exitPlate: string;
   photoOut1: string;
@@ -236,6 +237,7 @@ export const checkOut = async (params: CheckOutParams) => {
   return await db.update(schema.parkingEntries)
     .set({
       exitTime: new Date(),
+      exitShiftId: params.shiftId,
       exitPlate: params.exitPlate,
       photoOut1: params.photoOut1,
       photoOut2: params.photoOut2,
