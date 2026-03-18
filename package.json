@@ -8,7 +8,12 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "test": "jest --watchAll"
+    "test": "jest --watchAll",
+    "// --- BUILD LOCAL --- //": "",
+    "prebuild": "npx expo prebuild --platform android",
+    "build:apk:local": "npm run prebuild && cd android && ./gradlew assembleRelease",
+    "build:apk:local:clean": "rimraf android && npm run build:apk:local",
+    "build:aab:local": "npm run prebuild && cd android && ./gradlew bundleRelease"
   },
   "dependencies": {
     "@dev-plugins/react-query": "^0.4.0",
@@ -23,6 +28,7 @@
     "date-fns": "^4.1.0",
     "drizzle-orm": "^0.45.1",
     "expo": "~54.0.30",
+    "expo-build-properties": "~1.0.10",
     "expo-constants": "~18.0.12",
     "expo-crypto": "~15.0.8",
     "expo-dev-client": "~6.0.20",

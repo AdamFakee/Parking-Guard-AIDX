@@ -1,9 +1,10 @@
 import { CheckInPhotoPreview, CheckInStatusCards, EditPlateModal, VehicleSelector } from '@/shared/features/gate';
+import { checkNfcCardUsage } from '@/shared/features/gate/apis/gate.api';
 import { useCheckIn } from '@/shared/features/gate/hooks';
 import { TVehicleType } from '@/shared/features/gate/types';
 import { useShiftStore } from '@/shared/features/shift';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, CheckCircle } from 'lucide-react-native';
+import { ArrowLeft, CheckCircle, Info } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'react-native';
 
@@ -15,11 +16,41 @@ export default function CheckInScreen() {
   
   const [plateText, setPlateText] = useState(plate || '');
   const [vehicleType, setVehicleType] = useState<TVehicleType>('motorbike');
+  const [isMonthly, setIsMonthly] = useState(false);
+  const [monthlyInfo, setMonthlyInfo] = useState<{ customerName?: string, registeredPlate?: string } | null>(null);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
 
   useEffect(() => {
-    if (plate) setPlateText(plate);
-  }, [plate]);
+    async function checkCard() {
+      if (tagUid) {
+        const usage = await checkNfcCardUsage(tagUid);
+        if (usage.status === 'existing' && usage.cardType === 'thang') {
+          setIsMonthly(true);
+          setMonthlyInfo({
+            customerName: usage.customerName,
+            registeredPlate: usage.registeredPlate || undefined,
+          });
+          
+          if (usage.vehicleType) {
+            setVehicleType(usage.vehicleType as TVehicleType);
+          }
+          
+          if (usage.registeredPlate) {
+            setPlateText(usage.registeredPlate);
+          }
+
+          if (usage.isExpired) {
+            Alert.alert('Cảnh báo', 'Thẻ tháng này đã hết hạn!');
+          }
+        }
+      }
+    }
+    checkCard();
+  }, [tagUid]);
+
+  useEffect(() => {
+    if (plate && !isMonthly) setPlateText(plate);
+  }, [plate, isMonthly]);
 
   const handleSavePlate = (newPlate: string) => {
     setPlateText(newPlate);
@@ -43,7 +74,7 @@ export default function CheckInScreen() {
         router.dismissAll();
         router.replace('/');
       },
-      onError: (error) => {
+      onError: (error: any) => {
         console.log(error);
         Alert.alert('Lỗi', 'Không thể lưu lượt vào: ' + error.message);
       }
@@ -62,18 +93,36 @@ export default function CheckInScreen() {
       </View>
 
       <ScrollView style={{ flex: 1, backgroundColor: 'white', padding: 16 }} contentContainerStyle={{ paddingBottom: 100 }}>
+        {isMonthly && (
+          <View style={{ backgroundColor: '#eff6ff', padding: 12, borderRadius: 12, marginBottom: 16, flexDirection: 'row', alignItems: 'center' }}>
+            <Info size={20} color="#3b82f6" style={{ marginRight: 8 }} />
+            <View>
+              <Text style={{ color: '#1e40af', fontWeight: 'bold' }}>Thẻ tháng: {monthlyInfo?.customerName}</Text>
+              <Text style={{ color: '#1e40af', fontSize: 12 }}>Biển số đăng ký: {monthlyInfo?.registeredPlate}</Text>
+            </View>
+          </View>
+        )}
+
         <CheckInPhotoPreview image={image} plateText={plateText} />
 
         <CheckInStatusCards 
           plateText={plateText} 
           tagUid={tagUid} 
           onEditPlatePress={() => setIsEditModalVisible(true)} 
+          isMonthly={isMonthly}
         />
 
-        <VehicleSelector 
-          value={vehicleType} 
-          onChange={setVehicleType} 
-        />
+        <View pointerEvents={isMonthly ? 'none' : 'auto'} style={{ opacity: isMonthly ? 0.6 : 1 }}>
+          <VehicleSelector 
+            value={vehicleType} 
+            onChange={setVehicleType} 
+          />
+        </View>
+        {isMonthly && (
+          <Text style={{ color: '#64748b', fontSize: 12, textAlign: 'center', marginTop: 8 }}>
+            Loại phương tiện được cố định theo thẻ tháng
+          </Text>
+        )}
       </ScrollView>
 
       <EditPlateModal 
@@ -88,7 +137,7 @@ export default function CheckInScreen() {
         <Pressable 
           onPress={handleConfirm}
           disabled={isPending}
-          style={{ width: '100%', paddingVertical: 16, borderRadius: 8, backgroundColor: '#22c55e', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', opacity: isPending ? 0.7 : 1 }}
+          style={{ width: '100%', paddingVertical: 16, borderRadius: 8, backgroundColor: isMonthly ? '#3b82f6' : '#22c55e', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', opacity: isPending ? 0.7 : 1 }}
         >
           {isPending ? (
             <ActivityIndicator color="white" />

@@ -1,8 +1,6 @@
-import { relations } from 'drizzle-orm'
 import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import { generateUUID } from '../../lib/utils'
 import { staff } from './auth'
-import { parkingEntries } from './gate'
 
 export const shifts = sqliteTable('shifts', {
   id: text('id')
@@ -25,12 +23,3 @@ export const shifts = sqliteTable('shifts', {
   status: text('status', { enum: ['open', 'closed'] }).default('open'),
   synced: integer('synced', { mode: 'boolean' }).default(false),
 })
-
-// Quan hệ: 1 Ca trực thuộc về 1 NV, và có chứa nhiều Lượt gửi xe
-export const shiftsRelations = relations(shifts, ({ one, many }) => ({
-  staff: one(staff, {
-    fields: [shifts.staffId],
-    references: [staff.id],
-  }),
-  entries: many(parkingEntries),
-}))

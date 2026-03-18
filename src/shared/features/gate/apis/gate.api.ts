@@ -61,6 +61,18 @@ export const getDashboardStats = async (shiftId: string) => {
 };
 
 export const getCardStatus = async (cardUid: string) => {
+  // 1. Check card expiration for monthly cards
+  const [card] = await db
+    .select()
+    .from(schema.nfcCards)
+    .where(eq(schema.nfcCards.uid, cardUid))
+    .limit(1);
+
+  if (card?.cardType === 'thang' && card.expirationDate && new Date() > card.expirationDate) {
+    return 'expired';
+  }
+
+  // 2. Check latest entry for check-in/out state
   const [latestEntry] = await db
     .select()
     .from(schema.parkingEntries)
@@ -73,6 +85,58 @@ export const getCardStatus = async (cardUid: string) => {
   }
   
   return 'out'; // Next action is Check-Out
+};
+
+export const renewMonthlyCard = async (cardUid: string, months: number = 1) => {
+  const [currentCard] = await db
+    .select()
+    .from(schema.nfcCards)
+    .where(eq(schema.nfcCards.uid, cardUid))
+    .limit(1);
+
+  if (!currentCard) throw new Error('Thẻ không tồn tại');
+
+  const now = new Date();
+  const currentExpiry = currentCard.expirationDate && currentCard.expirationDate > now 
+    ? currentCard.expirationDate 
+    : now;
+  
+  const newExpiry = new Date(currentExpiry);
+  newExpiry.setMonth(newExpiry.getMonth() + months);
+
+  await db.update(schema.nfcCards)
+    .set({ expirationDate: newExpiry, updatedAt: now })
+    .where(eq(schema.nfcCards.uid, cardUid));
+
+  const [subscription] = await db
+    .select()
+    .from(schema.monthlySubscriptions)
+    .where(
+      and(
+        eq(schema.monthlySubscriptions.cardUid, cardUid),
+        eq(schema.monthlySubscriptions.status, 'active')
+      )
+    )
+    .orderBy(desc(schema.monthlySubscriptions.createdAt))
+    .limit(1);
+
+  if (subscription) {
+    await db.update(schema.monthlySubscriptions)
+      .set({ endDate: newExpiry })
+      .where(eq(schema.monthlySubscriptions.id, subscription.id));
+  }
+
+  return { newExpiry };
+};
+
+export const convertToRegularTicket = async (cardUid: string) => {
+  return await db.update(schema.nfcCards)
+    .set({ 
+      cardType: 'luot', 
+      expirationDate: null, 
+      updatedAt: new Date() 
+    })
+    .where(eq(schema.nfcCards.uid, cardUid));
 };
 
 export type CheckInParams = {
@@ -222,6 +286,30 @@ export const checkNfcCardUsage = async (uid: string) => {
     .limit(1);
 
   if (!card) return { status: 'new' };
+
+  if (card.cardType === 'thang') {
+    const [subscription] = await db
+      .select()
+      .from(schema.monthlySubscriptions)
+      .where(
+        and(
+          eq(schema.monthlySubscriptions.cardUid, uid),
+          eq(schema.monthlySubscriptions.status, 'active')
+        )
+      )
+      .orderBy(desc(schema.monthlySubscriptions.createdAt))
+      .limit(1);
+
+    return {
+      status: 'existing',
+      cardType: card.cardType,
+      cardStatus: card.status,
+      registeredPlate: card.registeredPlate,
+      vehicleType: subscription?.vehicleType || 'motorbike',
+      isExpired: true,
+      customerName: subscription?.customerName
+    };
+  }
   
   return { 
     status: 'existing', 

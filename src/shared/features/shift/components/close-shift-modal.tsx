@@ -1,6 +1,6 @@
 import { Button, ControlledInput } from '@/shared/components/ui';
 import { COLORS } from '@/shared/constants';
-import { useDashboardStats } from '@/shared/features/gate';
+import { useDashboardStats } from '@/shared/features/gate/hooks/use-dashboard-stats';
 import { valibotResolver } from '@hookform/resolvers/valibot';
 import { useRouter } from 'expo-router';
 import {

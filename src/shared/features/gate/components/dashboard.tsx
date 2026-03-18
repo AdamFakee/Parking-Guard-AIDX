@@ -1,13 +1,13 @@
-import { useShiftStore } from '@/shared/features/shift';
+import { useShiftStore } from '@/shared/features/shift/store/useShiftStore';
 import { useFocusEffect, useRouter } from 'expo-router';
 import {
+  CreditCard,
   LucideArrowLeftToLine,
   LucideArrowRightToLine,
-  LucideScanQrCode,
-  CreditCard
+  LucideScanQrCode
 } from 'lucide-react-native';
 import React, { useCallback, useEffect } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -16,8 +16,9 @@ import Animated, {
   withRepeat,
   withTiming
 } from 'react-native-reanimated';
-import { getCardStatus } from '../apis/gate.api';
+import { getCardStatus, renewMonthlyCard, convertToRegularTicket } from '../apis/gate.api';
 import { useDashboardStats, useNfc } from '../hooks';
+import { ExpiredMonthlyCardModal, ExpiredMonthlyCardModalRef } from './expired-monthly-card-modal';
 
 const PulseRing = ({ delay = 0 }: { delay?: number }) => {
   const scale = useSharedValue(0.33);
@@ -62,6 +63,9 @@ export const Dashboard = () => {
   const router = useRouter();
 
   const coreScale = useSharedValue(0.95);
+  
+  const modalRef = React.useRef<ExpiredMonthlyCardModalRef>(null);
+  const [isProcessingExpired, setIsProcessingExpired] = React.useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -76,6 +80,11 @@ export const Dashboard = () => {
         // Dynamically determine mode from DB
         const mode = await getCardStatus(tagUid);
         
+        if (mode === 'expired') {
+          modalRef.current?.show(tagUid);
+          return;
+        }
+        
         const params = new URLSearchParams({ mode });
         if (tagUid) params.append('tagUid', tagUid);
         
@@ -88,6 +97,41 @@ export const Dashboard = () => {
       };
     }, [startListening, stopListening, router])
   );
+  const handleRenew = async (tagUid: string) => {
+    try {
+      setIsProcessingExpired(true);
+      await renewMonthlyCard(tagUid);
+      modalRef.current?.hide();
+      
+      // Auto-navigate to scan-plate after renewal
+      const params = new URLSearchParams({ mode: 'in', tagUid });
+      router.push(`/gate/scan-plate?${params.toString()}` as any);
+      
+      Alert.alert('Thành công', 'Đã gia hạn 1 tháng thành công');
+    } catch (error: any) {
+      Alert.alert('Lỗi', 'Gia hạn thất bại: ' + error.message);
+    } finally {
+      setIsProcessingExpired(false);
+    }
+  };
+
+  const handleConvertToRegular = async (tagUid: string) => {
+    try {
+      setIsProcessingExpired(true);
+      await convertToRegularTicket(tagUid);
+      modalRef.current?.hide();
+      
+      // Auto-navigate to scan-plate after conversion
+      const params = new URLSearchParams({ mode: 'in', tagUid });
+      router.push(`/gate/scan-plate?${params.toString()}` as any);
+      
+      Alert.alert('Thành công', 'Đã chuyển thành thẻ lượt');
+    } catch (error: any) {
+      Alert.alert('Lỗi', 'Chuyển đổi thất bại: ' + error.message);
+    } finally {
+      setIsProcessingExpired(false);
+    }
+  };
 
   const handleNfcRead = () => {
     // Left for manual click fallback but functionally replaced by auto-scan
@@ -235,6 +279,13 @@ export const Dashboard = () => {
           </Pressable>
         </View>
       </ScrollView>
+
+      <ExpiredMonthlyCardModal 
+        ref={modalRef}
+        isPending={isProcessingExpired}
+        onRenew={handleRenew}
+        onConvertToRegular={handleConvertToRegular}
+      />
     </View>
   );
 };

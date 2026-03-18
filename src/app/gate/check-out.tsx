@@ -1,16 +1,15 @@
 import { AppHeader, Button } from '@/shared/components/ui';
 import { COLORS, SHADOW } from '@/shared/constants/color.const';
 import { checkoutSchema, QRPaymentModal, QRPaymentModalRef, TCheckoutForm, TParkingEntry, useCheckOut, usePricingRules, useSystemConfig } from '@/shared/features/gate';
-import { getActiveEntryByCard } from '@/shared/features/gate/apis/gate.api';
+import { checkNfcCardUsage, getActiveEntryByCard } from '@/shared/features/gate/apis/gate.api';
 import { SearchActiveEntryModal, SearchActiveEntryModalRef } from '@/shared/features/gate/components/search-active-entry-modal';
 import { calculateParkingPricing, checkPlateMatch } from '@/shared/features/gate/utils';
 import { valibotResolver } from '@hookform/resolvers/valibot';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { AlertCircle, AlertTriangle, Calculator, CheckCircle2, Circle, MessageSquare, Wallet } from 'lucide-react-native';
+import { AlertCircle, AlertTriangle, Calculator, CheckCircle2, Circle, Info, MessageSquare, Wallet } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { ActivityIndicator, Alert, Image, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
-
 
 export default function CheckOutScreen() {
   const router = useRouter();
@@ -26,6 +25,9 @@ export default function CheckOutScreen() {
   const searchModalRef = useRef<SearchActiveEntryModalRef>(null);
   const qrModalRef = useRef<QRPaymentModalRef>(null);
   const [pendingFormData, setPendingFormData] = useState<TCheckoutForm | null>(null);
+
+  const [isMonthly, setIsMonthly] = useState(false);
+  const [monthlyInfo, setMonthlyInfo] = useState<{ customerName?: string, isExpired?: boolean } | null>(null);
 
   const { control, handleSubmit, watch, setValue } = useForm<TCheckoutForm>({
     resolver: valibotResolver(checkoutSchema),
@@ -71,6 +73,33 @@ export default function CheckOutScreen() {
     }
   }, [tagUid, outPlate, loadEntryByCard, setValue]);
 
+  useEffect(() => {
+    async function checkCardType() {
+      const uidToCheck = tagUid && tagUid !== 'undefined' ? tagUid : entry?.cardUid;
+      if (uidToCheck) {
+        const usage = await checkNfcCardUsage(uidToCheck);
+        if (usage.status === 'existing' && usage.cardType === 'thang') {
+          if (usage.isExpired) {
+            setIsMonthly(false);
+            setMonthlyInfo({ customerName: usage.customerName, isExpired: true });
+          } else {
+            setIsMonthly(true);
+            setMonthlyInfo({ customerName: usage.customerName, isExpired: false });
+          }
+        } else {
+          setIsMonthly(false);
+          setMonthlyInfo(null);
+        }
+      } else {
+        setIsMonthly(false);
+        setMonthlyInfo(null);
+      }
+    }
+    if (entry || tagUid) {
+      checkCardType();
+    }
+  }, [entry, tagUid]);
+
   const handleSelectEntry = (selectedEntry: TParkingEntry) => {
     setEntry(selectedEntry);
     if (!tagUid || tagUid === 'undefined') {
@@ -85,8 +114,18 @@ export default function CheckOutScreen() {
   const isLostCard = checkoutType === 'lost';
 
   const pricing = useMemo(() => {
-    return calculateParkingPricing(entry, sysConfig, pricingRules, isLostCard);
-  }, [entry, isLostCard, sysConfig, pricingRules]);
+    const basePricing = calculateParkingPricing(entry, sysConfig, pricingRules, isLostCard);
+    
+    if (isMonthly && !monthlyInfo?.isExpired) {
+      return {
+        ...basePricing,
+        fee: 0,
+        total: isLostCard ? basePricing.surcharge : 0
+      };
+    }
+    
+    return basePricing;
+  }, [entry, isLostCard, sysConfig, pricingRules, isMonthly, monthlyInfo]);
 
   const onConfirmCheckout = (data: TCheckoutForm, paymentMethod: 'cash' | 'qr_transfer') => {
     if (!entry) return;
@@ -186,6 +225,35 @@ export default function CheckOutScreen() {
       />
 
       <ScrollView className="flex-1 p-4" contentContainerStyle={{ paddingBottom: 160 }}>
+        {monthlyInfo && (
+          <View 
+            style={{ 
+              backgroundColor: isMonthly ? '#eff6ff' : '#fef2f2', 
+              padding: 12, 
+              borderRadius: 12, 
+              marginBottom: 16, 
+              flexDirection: 'row', 
+              alignItems: 'center',
+              borderWidth: 1,
+              borderColor: isMonthly ? '#bfdbfe' : '#fecaca'
+            }}
+          >
+            {isMonthly ? (
+              <Info size={20} color="#3b82f6" style={{ marginRight: 8 }} />
+            ) : (
+              <AlertTriangle size={20} color="#ef4444" style={{ marginRight: 8 }} />
+            )}
+            <View>
+              <Text style={{ color: isMonthly ? '#1e40af' : '#b91c1c', fontWeight: 'bold' }}>
+                Thẻ tháng: {monthlyInfo?.customerName} {isMonthly ? '' : '(HẾT HẠN)'}
+              </Text>
+              <Text style={{ color: isMonthly ? '#1e40af' : '#b91c1c', fontSize: 12 }}>
+                {isMonthly ? 'Đã được miễn phí tiền gửi xe' : 'Hết hạn sử dụng - Tính tiền như vé lượt'}
+              </Text>
+            </View>
+          </View>
+        )}
+
         {/* Plate Comparison */}
         <View 
           className="bg-white rounded-2xl p-5 mb-4 border border-[#F1F5F9]"

@@ -1,4 +1,3 @@
-import { relations } from 'drizzle-orm'
 import { index, integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import { generateUUID } from '../../lib/utils'
 import { shifts } from './shift'
@@ -96,25 +95,3 @@ export const lostCardReports = sqliteTable('lost_card_reports', {
   synced: integer('synced', { mode: 'boolean' }).default(false),
 })
 
-// --- QUAN HỆ (RELATIONS) ---
-export const parkingEntriesRelations = relations(parkingEntries, ({ one }) => ({
-  shift: one(shifts, {
-    fields: [parkingEntries.shiftId],
-    references: [shifts.id],
-  }),
-  card: one(nfcCards, {
-    fields: [parkingEntries.cardUid],
-    references: [nfcCards.uid],
-  }),
-  lostReport: one(lostCardReports, {
-    fields: [parkingEntries.id],
-    references: [lostCardReports.entryId],
-  }),
-}))
-
-export const monthlySubscriptionsRelations = relations(monthlySubscriptions, ({ one }) => ({
-  card: one(nfcCards, {
-    fields: [monthlySubscriptions.cardUid],
-    references: [nfcCards.uid],
-  }),
-}))

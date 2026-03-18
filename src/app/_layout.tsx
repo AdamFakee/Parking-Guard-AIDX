@@ -13,7 +13,7 @@ import { KeyboardProvider } from 'react-native-keyboard-controller'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 import { useShiftStore } from '@/shared/features/shift'
-import migrations from '../../drizzle/migrations'
+import migrations from '../../drizzle/migrations.js'
 import './global.css'
 
 setupReactQueryMobile()
@@ -111,4 +111,4 @@ export default function RootLayout() {
       </KeyboardProvider>
     </SafeAreaProvider>
   )
-}
+}
