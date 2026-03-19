@@ -3,7 +3,7 @@ import { Search, X } from 'lucide-react-native';
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, Modal, Pressable, Text, TextInput, View } from 'react-native';
 import { searchActiveEntries } from '../apis/gate.api';
-import { TParkingEntry } from '../types';
+import { TParkingEntry, TSearchVehicleType } from '../types/gate.types';
 
 type ParkingEntry = TParkingEntry;
 
@@ -22,6 +22,7 @@ export const SearchActiveEntryModal = forwardRef<SearchActiveEntryModalRef, Prop
   const [outPlate, setOutPlate] = useState('');
   const [searchType, setSearchType] = useState<'out' | 'in'>('out');
   const [onlyNoUid, setOnlyNoUid] = useState(false);
+  const [vehicleType, setVehicleType] = useState<TSearchVehicleType>('all');
   const [entries, setEntries] = useState<ParkingEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -29,11 +30,12 @@ export const SearchActiveEntryModal = forwardRef<SearchActiveEntryModalRef, Prop
     open: (initialPlate, onlyNoUidFlag = false) => {
       setIsVisible(true);
       setOnlyNoUid(onlyNoUidFlag);
+      setVehicleType('all');
       if (initialPlate) {
         setOutPlate(initialPlate);
         setSearchType('out');
         setSearchQuery(initialPlate);
-        handleSearch(initialPlate, onlyNoUidFlag);
+        handleSearch(initialPlate, onlyNoUidFlag, 'all');
       } else {
         setSearchType('in');
         setSearchQuery('');
@@ -43,14 +45,14 @@ export const SearchActiveEntryModal = forwardRef<SearchActiveEntryModalRef, Prop
     close: () => setIsVisible(false),
   }));
 
-  const handleSearch = useCallback(async (query: string, filterNoUid?: boolean) => {
+  const handleSearch = useCallback(async (query: string, filterNoUid?: boolean, vType?: TSearchVehicleType) => {
     if (!query) {
       setEntries([]);
       return;
     }
     setIsLoading(true);
     try {
-      const results = await searchActiveEntries(query, filterNoUid ?? onlyNoUid);
+      const results = await searchActiveEntries(query, filterNoUid ?? onlyNoUid, vType ?? vehicleType);
       setEntries(results as ParkingEntry[]);
 
       console.log(results.map(e => e.cardUid))
@@ -59,7 +61,7 @@ export const SearchActiveEntryModal = forwardRef<SearchActiveEntryModalRef, Prop
     } finally {
       setIsLoading(false);
     }
-  }, [onlyNoUid]);
+  }, [onlyNoUid, vehicleType]);
 
   useEffect(() => {
     if (searchType === 'out') return;
@@ -182,6 +184,27 @@ export const SearchActiveEntryModal = forwardRef<SearchActiveEntryModalRef, Prop
               )}
             </View>
           )}
+        </View>
+
+        {/* Vehicle Type Filter */}
+        <View className="flex-row px-4 pb-4 bg-white gap-2">
+           {[
+             { id: 'all', label: 'Tất cả' },
+             { id: 'motorbike', label: 'Xe máy' },
+             { id: 'car', label: 'Ô tô' },
+             { id: 'ebike', label: 'Xe điện' }
+           ].map((item) => (
+             <Pressable
+               key={item.id}
+               onPress={() => {
+                 setVehicleType(item.id as any);
+                 if (searchQuery) handleSearch(searchQuery, onlyNoUid, item.id as any);
+               }}
+               className={`flex-1 py-2 rounded-lg border items-center justify-center ${vehicleType === item.id ? 'bg-[#eff6ff] border-blue-500' : 'bg-[#F8FAFC] border-slate-200'}`}
+             >
+               <Text className={`text-[11px] font-bold ${vehicleType === item.id ? 'text-blue-600' : 'text-slate-500'}`}>{item.label}</Text>
+             </Pressable>
+           ))}
         </View>
 
         {/* List */}

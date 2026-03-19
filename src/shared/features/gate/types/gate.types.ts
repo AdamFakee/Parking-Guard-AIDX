@@ -2,6 +2,7 @@ import * as schema from '@/shared/db/schemas';
 import { InferSelectModel } from 'drizzle-orm';
 
 export type TVehicleType = 'motorbike' | 'car' | 'ebike';
+export type TSearchVehicleType = TVehicleType | 'all';
 
 export type TParkingEntry = InferSelectModel<typeof schema.parkingEntries>;
 export type TSystemConfig = InferSelectModel<typeof schema.systemConfigs>;

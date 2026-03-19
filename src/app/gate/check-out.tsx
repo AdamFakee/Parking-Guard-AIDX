@@ -69,7 +69,7 @@ export default function CheckOutScreen() {
     } else {
       setLoading(false);
       const timer = setTimeout(() => {
-         searchModalRef.current?.open(outPlate, true);
+         searchModalRef.current?.open(outPlate, false);
       }, 500);
       return () => clearTimeout(timer);
     }
@@ -105,7 +105,13 @@ export default function CheckOutScreen() {
   const handleSelectEntry = (selectedEntry: TParkingEntry) => {
     setEntry(selectedEntry);
     if (!tagUid || tagUid === 'undefined') {
-      setValue('checkoutType', undefined);
+      // Nếu xe vào có dùng thẻ nhưng ra không có thẻ => Mất thẻ
+      if (selectedEntry.cardUid) {
+        setValue('checkoutType', 'lost');
+      } else {
+        // Nếu xe vào không dùng thẻ (vào lụi/không thẻ) => Checkout không thẻ
+        setValue('checkoutType', 'virtual');
+      }
     }
   };
 
@@ -192,7 +198,7 @@ export default function CheckOutScreen() {
         <Text className="text-slate-500 text-center mt-2 mb-8 text-sm">Vui lòng quẹt thẻ lại hoặc tìm kiếm xe bằng biển số</Text>
         {!tagUid && (
           <Pressable 
-            onPress={() => searchModalRef.current?.open(outPlate, true)}
+            onPress={() => searchModalRef.current?.open(outPlate, false)}
             className="bg-blue-500 px-8 py-3 rounded-xl"
             style={SHADOW.bottom}
           >
@@ -208,6 +214,7 @@ export default function CheckOutScreen() {
   }
 
   const isFormValid = !!checkoutType;
+  const isTypeLocked = !!entry && (!tagUid || tagUid === 'undefined');
 
   return (
     <View className="flex-1 bg-[#F8FAFC]">
@@ -217,7 +224,7 @@ export default function CheckOutScreen() {
         showBorderBottom={true}
         borderBottomColor={COLORS.slate[200]}
         rightIcon={!tagUid || tagUid === 'undefined' ? <Text className="text-blue-500 font-bold">Sửa</Text> : null}
-        onRightPress={() => searchModalRef.current?.open(outPlate, true)}
+        onRightPress={() => searchModalRef.current?.open(outPlate, false)}
       />
 
       <ScrollView className="flex-1 p-4" contentContainerStyle={{ paddingBottom: 160 }}>
@@ -302,16 +309,18 @@ export default function CheckOutScreen() {
             
             <View className="flex-row gap-3">
               <Pressable 
-                onPress={() => setValue('checkoutType', 'virtual')}
-                className={`flex-1 flex-row items-center p-4 rounded-xl border ${checkoutType === 'virtual' ? 'bg-[#eff6ff] border-[#bfdbfe]' : 'bg-[#F8FAFC] border-slate-200'}`}
+                onPress={() => !isTypeLocked && setValue('checkoutType', 'virtual')}
+                disabled={isTypeLocked}
+                className={`flex-1 flex-row items-center p-4 rounded-xl border ${checkoutType === 'virtual' ? 'bg-[#eff6ff] border-[#bfdbfe]' : 'bg-[#F8FAFC] border-slate-200'} ${isTypeLocked ? 'opacity-70' : ''}`}
               >
                 {checkoutType === 'virtual' ? <CheckCircle2 size={16} color={COLORS.brand.blue} /> : <Circle size={16} color={COLORS.slate[200]} />}
                 <Text className={`ml-2 text-sm font-bold ${checkoutType === 'virtual' ? 'text-blue-500' : 'text-slate-500'}`}>Xe không thẻ</Text>
               </Pressable>
               
               <Pressable 
-                onPress={() => setValue('checkoutType', 'lost')}
-                className={`flex-1 flex-row items-center p-4 rounded-xl border ${checkoutType === 'lost' ? 'bg-[#fff7ed] border-[#fed7aa]' : 'bg-[#F8FAFC] border-slate-200'}`}
+                onPress={() => !isTypeLocked && setValue('checkoutType', 'lost')}
+                disabled={isTypeLocked}
+                className={`flex-1 flex-row items-center p-4 rounded-xl border ${checkoutType === 'lost' ? 'bg-[#fff7ed] border-[#fed7aa]' : 'bg-[#F8FAFC] border-slate-200'} ${isTypeLocked ? 'opacity-70' : ''}`}
               >
                 {checkoutType === 'lost' ? <CheckCircle2 size={16} color={COLORS.brand.orange} /> : <Circle size={16} color={COLORS.slate[200]} />}
                 <Text className={`ml-2 text-sm font-bold ${checkoutType === 'lost' ? 'text-amber-500' : 'text-slate-500'}`}>Mất thẻ</Text>

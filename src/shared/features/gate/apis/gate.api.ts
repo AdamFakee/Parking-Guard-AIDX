@@ -2,6 +2,7 @@ import { db } from '@/shared/db';
 import * as schema from '@/shared/db/schemas';
 import { and, desc, eq, isNull, like, sql } from 'drizzle-orm';
 import { DEFAULT_RENEWAL_MONTHS } from '../const';
+import { TSearchVehicleType, TVehicleType } from '../types/gate.types';
 
 export const getDashboardStats = async (shiftId: string) => {
   // Count cars currently in yard
@@ -196,7 +197,7 @@ export const convertToRegularTicket = async (cardUid: string) => {
 export type CheckInParams = {
   entryShiftId: string;
   cardUid?: string;
-  vehicleType: 'motorbike' | 'car' | 'ebike';
+  vehicleType: TVehicleType;
   plateText: string;
   photoIn1: string;
   photoIn2: string;
@@ -231,7 +232,7 @@ export const checkIn = async (params: CheckInParams) => {
   });
 };
 
-export const searchActiveEntries = async (plate: string, onlyNoUid: boolean = false) => {
+export const searchActiveEntries = async (plate: string, onlyNoUid: boolean = false, vehicleType?: TSearchVehicleType) => {
 
   const conditions = [
     eq(schema.parkingEntries.status, 'IN'),
@@ -240,6 +241,10 @@ export const searchActiveEntries = async (plate: string, onlyNoUid: boolean = fa
 
   if (onlyNoUid) {
     conditions.push(isNull(schema.parkingEntries.cardUid));
+  }
+
+  if (vehicleType && vehicleType !== 'all') {
+    conditions.push(eq(schema.parkingEntries.vehicleType, vehicleType));
   }
 
   return await db
