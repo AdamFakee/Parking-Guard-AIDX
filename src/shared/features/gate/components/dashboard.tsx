@@ -16,7 +16,7 @@ import Animated, {
   withRepeat,
   withTiming
 } from 'react-native-reanimated';
-import { getCardStatus, renewMonthlyCard, convertToRegularTicket } from '../apis/gate.api';
+import { getCardStatus } from '../apis/gate.api';
 import { useDashboardStats, useNfc } from '../hooks';
 import { ExpiredMonthlyCardModal, ExpiredMonthlyCardModalRef } from './expired-monthly-card-modal';
 
@@ -65,7 +65,6 @@ export const Dashboard = () => {
   const coreScale = useSharedValue(0.95);
   
   const modalRef = React.useRef<ExpiredMonthlyCardModalRef>(null);
-  const [isProcessingExpired, setIsProcessingExpired] = React.useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -97,39 +96,17 @@ export const Dashboard = () => {
       };
     }, [startListening, stopListening, router])
   );
-  const handleRenew = async (tagUid: string) => {
-    try {
-      setIsProcessingExpired(true);
-      await renewMonthlyCard(tagUid);
-      modalRef.current?.hide();
-      
-      // Auto-navigate to scan-plate after renewal
-      const params = new URLSearchParams({ mode: 'in', tagUid });
-      router.push(`/gate/scan-plate?${params.toString()}` as any);
-      
-      Alert.alert('Thành công', 'Đã gia hạn 1 tháng thành công');
-    } catch (error: any) {
-      Alert.alert('Lỗi', 'Gia hạn thất bại: ' + error.message);
-    } finally {
-      setIsProcessingExpired(false);
-    }
-  };
+  // ... (useFocusEffect setup)
 
-  const handleConvertToRegular = async (tagUid: string) => {
-    try {
-      setIsProcessingExpired(true);
-      await convertToRegularTicket(tagUid);
-      modalRef.current?.hide();
-      
-      // Auto-navigate to scan-plate after conversion
-      const params = new URLSearchParams({ mode: 'in', tagUid });
-      router.push(`/gate/scan-plate?${params.toString()}` as any);
-      
-      Alert.alert('Thành công', 'Đã chuyển thành thẻ lượt');
-    } catch (error: any) {
-      Alert.alert('Lỗi', 'Chuyển đổi thất bại: ' + error.message);
-    } finally {
-      setIsProcessingExpired(false);
+  const handleModalSuccess = (tagUid: string, type: 'renew' | 'convert') => {
+    // Auto-navigate to scan-plate after action
+    const params = new URLSearchParams({ mode: 'in', tagUid });
+    router.push(`/gate/scan-plate?${params.toString()}` as any);
+    
+    if (type === 'renew') {
+      Alert.alert('Thành công', 'Đã gia hạn thẻ tháng thành công.');
+    } else {
+      Alert.alert('Thành công', 'Đã chuyển thành thẻ lượt.');
     }
   };
 
@@ -194,11 +171,11 @@ export const Dashboard = () => {
             <Text className="text-2xl font-extrabold text-blue-500 font-mono">{stats?.inYard || 0}</Text>
           </View>
           <View className="flex-1 bg-white p-3 rounded-lg shadow-sm border border-slate-200">
-            <Text className="text-[10px] font-bold text-slate-400 uppercase">Vào</Text>
+            <Text className="text-[10px] font-bold text-slate-400 uppercase">Xe vào</Text>
             <Text className="text-2xl font-extrabold text-green-500 font-mono">{stats?.entries || 0}</Text>
           </View>
           <View className="flex-1 bg-white p-3 rounded-lg shadow-sm border border-slate-200">
-            <Text className="text-[10px] font-bold text-slate-400 uppercase">Ra</Text>
+            <Text className="text-[10px] font-bold text-slate-400 uppercase">Xe ra</Text>
             <Text className="text-2xl font-extrabold text-orange-500 font-mono">{stats?.exits || 0}</Text>
           </View>
         </View>
@@ -259,14 +236,14 @@ export const Dashboard = () => {
               className="flex-1 flex-col items-center justify-center gap-2 py-5 bg-blue-500 rounded-2xl shadow-md active:scale-95"
             >
               <LucideArrowRightToLine size={24} color="white" />
-              <Text className="text-white font-bold text-xs">VÀO</Text>
+              <Text className="text-white font-bold text-xs">Xe vào</Text>
             </Pressable>
             <Pressable 
               onPress={() => router.push('/gate/scan-plate?mode=out' as any)}
               className="flex-1 flex-col items-center justify-center gap-2 py-5 bg-orange-500 rounded-2xl shadow-md active:scale-95"
             >
               <LucideArrowLeftToLine size={24} color="white" />
-              <Text className="text-white font-bold text-xs">RA</Text>
+              <Text className="text-white font-bold text-xs">Xe ra</Text>
             </Pressable>
           </View>
           
@@ -282,9 +259,7 @@ export const Dashboard = () => {
 
       <ExpiredMonthlyCardModal 
         ref={modalRef}
-        isPending={isProcessingExpired}
-        onRenew={handleRenew}
-        onConvertToRegular={handleConvertToRegular}
+        onSuccess={handleModalSuccess}
       />
     </View>
   );

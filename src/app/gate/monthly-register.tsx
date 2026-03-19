@@ -1,28 +1,29 @@
 import { Button, ControlledInput } from '@/shared/components/ui';
-import { useMonthlyRegistration, useNfc, useSystemConfig } from '@/shared/features/gate/hooks';
 import { checkNfcCardUsage } from '@/shared/features/gate/apis/gate.api';
+import { useMonthlyRegistration, useNfc, useSystemConfig } from '@/shared/features/gate/hooks';
+import { useShiftStore } from '@/shared/features/shift';
 import { cn } from '@/shared/utils';
 import { valibotResolver } from '@hookform/resolvers/valibot';
 import { useRouter } from 'expo-router';
-import { 
-  ArrowLeft,
-  Bike, 
-  Camera, 
-  Car, 
-  CheckCircle2, 
-  Scan, 
-  Trash2, 
-  Zap,
-  Calendar
+import {
+    ArrowLeft,
+    Bike,
+    Calendar,
+    Camera,
+    Car,
+    CheckCircle2,
+    Scan,
+    Trash2,
+    Zap
 } from 'lucide-react-native';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import {
-  Alert,
-  Image,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    Image,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import * as v from 'valibot';
@@ -208,6 +209,7 @@ export default function MonthlyRegisterScreen() {
   const router = useRouter();
   const [photo, setPhoto] = useState<string | null>(null);
   const { startListening, stopListening, isReading } = useNfc();
+  const { currentShift } = useShiftStore();
   const { data: config } = useSystemConfig();
   const { mutateAsync: register, isPending } = useMonthlyRegistration();
 
@@ -306,9 +308,16 @@ export default function MonthlyRegisterScreen() {
         return;
       }
 
+      if (!currentShift?.id) {
+        Alert.alert('Lỗi', 'Không tìm thấy thông tin ca trực');
+        return;
+      }
+
       await register({
         ...data,
         photoProfile: photo,
+        shiftId: currentShift.id,
+        paymentMethod: 'cash', // Default to cash
       });
 
       Alert.alert('Thành công', 'Đã đăng ký thẻ tháng thành công', [

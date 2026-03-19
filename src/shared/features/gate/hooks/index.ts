@@ -6,3 +6,4 @@ export * from './use-update-system-config';
 export * from './use-pricing-rules';
 export * from './use-monthly-registration';
 export * from './use-monthly-subscriptions';
+export * from './use-renew-monthly-card';

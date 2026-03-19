@@ -1,0 +1,1 @@
+export const DEFAULT_RENEWAL_MONTHS = 1;

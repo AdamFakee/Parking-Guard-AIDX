@@ -44,4 +44,8 @@ export const monthlySubscriptionsRelations = relations(monthlySubscriptions, ({ 
     fields: [monthlySubscriptions.cardUid],
     references: [nfcCards.uid],
   }),
+  shift: one(shifts, {
+    fields: [monthlySubscriptions.shiftId],
+    references: [shifts.id],
+  }),
 }));

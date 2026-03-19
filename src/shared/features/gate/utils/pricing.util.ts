@@ -5,7 +5,8 @@ export const calculateParkingPricing = (
   entry: TParkingEntry | null,
   sysConfig?: TSystemConfig | null,
   pricingRules?: TPricingRule[] | null,
-  isLostCard: boolean = false
+  isLostCard: boolean = false,
+  isMonthly: boolean = false
 ): TPricingResult => {
   if (!entry) return { duration: '0 phút', fee: 0, surcharge: 0, total: 0 };
   
@@ -25,40 +26,42 @@ export const calculateParkingPricing = (
   
   let baseFee = 0;
   
-  if (pricingRules && pricingRules.length > 0) {
-    // Find matching rule for daytime/vehicleType as base logic
-    const rule = pricingRules.find(r => r.vehicleType === entry.vehicleType && r.timeType === 'daytime') 
-              || pricingRules.find(r => r.vehicleType === entry.vehicleType);
-              
-    if (rule) {
-      const totalHours = Math.ceil(minutes / 60);
-      let calculatedFee = 0;
-      
-      // Simple fee calculation ignoring overnight for now if not strictly configured 
-      // Real logic could be much more complex day/night splitting
-      if (totalHours <= rule.firstHours) {
-        calculatedFee = rule.firstPrice;
-      } else {
-        const extraHours = totalHours - rule.firstHours;
-        calculatedFee = rule.firstPrice + (extraHours * rule.extraPerHour);
+  if (!isMonthly) {
+    if (pricingRules && pricingRules.length > 0) {
+      // Find matching rule for daytime/vehicleType as base logic
+      const rule = pricingRules.find(r => r.vehicleType === entry.vehicleType && r.timeType === 'daytime') 
+                || pricingRules.find(r => r.vehicleType === entry.vehicleType);
+                
+      if (rule) {
+        const totalHours = Math.ceil(minutes / 60);
+        let calculatedFee = 0;
+        
+        // Simple fee calculation ignoring overnight for now if not strictly configured 
+        // Real logic could be much more complex day/night splitting
+        if (totalHours <= rule.firstHours) {
+          calculatedFee = rule.firstPrice;
+        } else {
+          const extraHours = totalHours - rule.firstHours;
+          calculatedFee = rule.firstPrice + (extraHours * rule.extraPerHour);
+        }
+        
+        // Apply max per day if configured
+        if (rule.maxPerDay && calculatedFee > rule.maxPerDay && days === 0) {
+          calculatedFee = rule.maxPerDay;
+        } else if (rule.maxPerDay && days > 0) {
+          calculatedFee = rule.maxPerDay * days + Math.min(rule.maxPerDay, rule.firstPrice + (hours - rule.firstHours > 0 ? (hours - rule.firstHours) * rule.extraPerHour : 0));
+        }
+        baseFee = calculatedFee;
       }
-      
-      // Apply max per day if configured
-      if (rule.maxPerDay && calculatedFee > rule.maxPerDay && days === 0) {
-         calculatedFee = rule.maxPerDay;
-      } else if (rule.maxPerDay && days > 0) {
-         calculatedFee = rule.maxPerDay * days + Math.min(rule.maxPerDay, rule.firstPrice + (hours - rule.firstHours > 0 ? (hours - rule.firstHours) * rule.extraPerHour : 0));
-      }
-      baseFee = calculatedFee;
+    } else {
+      // Fallback
+      baseFee = entry.vehicleType === 'car' ? 20000 : 5000;
     }
-  } else {
-    // Fallback
-    baseFee = entry.vehicleType === 'car' ? 20000 : 5000;
-  }
-  
-  // Check if under free minutes
-  if (sysConfig?.freeMinutes && minutes < sysConfig.freeMinutes) {
-    baseFee = 0;
+    
+    // Check if under free minutes
+    if (sysConfig?.freeMinutes && minutes < sysConfig.freeMinutes) {
+      baseFee = 0;
+    }
   }
   
   const lostCardFee = sysConfig?.lostCardFee || 50000;

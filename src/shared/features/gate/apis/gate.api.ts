@@ -1,6 +1,7 @@
 import { db } from '@/shared/db';
 import * as schema from '@/shared/db/schemas';
 import { and, desc, eq, isNull, like, sql } from 'drizzle-orm';
+import { DEFAULT_RENEWAL_MONTHS } from '../const';
 
 export const getDashboardStats = async (shiftId: string) => {
   // Count cars currently in yard
@@ -50,13 +51,37 @@ export const getDashboardStats = async (shiftId: string) => {
       )
     );
 
+  // Monthly pass revenue in this shift
+  const [monthlyCashRevenue] = await db
+    .select({ total: sql<number>`sum(${schema.monthlySubscriptions.price})` })
+    .from(schema.monthlySubscriptions)
+    .where(
+      and(
+        eq(schema.monthlySubscriptions.shiftId, shiftId),
+        eq(schema.monthlySubscriptions.paymentMethod, 'cash')
+      )
+    );
+
+  const [monthlyQrRevenue] = await db
+    .select({ total: sql<number>`sum(${schema.monthlySubscriptions.price})` })
+    .from(schema.monthlySubscriptions)
+    .where(
+      and(
+        eq(schema.monthlySubscriptions.shiftId, shiftId),
+        eq(schema.monthlySubscriptions.paymentMethod, 'qr_transfer')
+      )
+    );
+
+  const totalCash = (cashRevenue?.total || 0) + (monthlyCashRevenue?.total || 0);
+  const totalQr = (qrRevenue?.total || 0) + (monthlyQrRevenue?.total || 0);
+
   return {
     inYard: inYardCount?.count || 0,
     entries: shiftEntryCount?.count || 0,
     exits: shiftExitCount?.count || 0,
-    revenue: (cashRevenue?.total || 0) + (qrRevenue?.total || 0),
-    cashRevenue: cashRevenue?.total || 0,
-    qrRevenue: qrRevenue?.total || 0,
+    revenue: totalCash + totalQr,
+    cashRevenue: totalCash,
+    qrRevenue: totalQr,
   };
 };
 
@@ -87,7 +112,19 @@ export const getCardStatus = async (cardUid: string) => {
   return 'out'; // Next action is Check-Out
 };
 
-export const renewMonthlyCard = async (cardUid: string, months: number = 1) => {
+export const renewMonthlyCard = async ({ 
+  cardUid, 
+  months = DEFAULT_RENEWAL_MONTHS, 
+  price = 0, 
+  shiftId, 
+  paymentMethod = 'cash' 
+}: { 
+  cardUid: string; 
+  months?: number; 
+  price?: number; 
+  shiftId: string; 
+  paymentMethod?: 'cash' | 'qr_transfer' 
+}) => {
   const [currentCard] = await db
     .select()
     .from(schema.nfcCards)
@@ -95,18 +132,6 @@ export const renewMonthlyCard = async (cardUid: string, months: number = 1) => {
     .limit(1);
 
   if (!currentCard) throw new Error('Thẻ không tồn tại');
-
-  const now = new Date();
-  const currentExpiry = currentCard.expirationDate && currentCard.expirationDate > now 
-    ? currentCard.expirationDate 
-    : now;
-  
-  const newExpiry = new Date(currentExpiry);
-  newExpiry.setMonth(newExpiry.getMonth() + months);
-
-  await db.update(schema.nfcCards)
-    .set({ expirationDate: newExpiry, updatedAt: now })
-    .where(eq(schema.nfcCards.uid, cardUid));
 
   const [subscription] = await db
     .select()
@@ -120,13 +145,42 @@ export const renewMonthlyCard = async (cardUid: string, months: number = 1) => {
     .orderBy(desc(schema.monthlySubscriptions.createdAt))
     .limit(1);
 
-  if (subscription) {
-    await db.update(schema.monthlySubscriptions)
-      .set({ endDate: newExpiry })
-      .where(eq(schema.monthlySubscriptions.id, subscription.id));
-  }
+  if (!subscription) throw new Error('Không tìm thấy thông tin đăng ký thẻ tháng');
 
-  return { newExpiry };
+  const now = new Date();
+  const currentExpiry = currentCard.expirationDate && currentCard.expirationDate > now 
+    ? currentCard.expirationDate 
+    : now;
+  
+  const newExpiry = new Date(currentExpiry);
+  newExpiry.setMonth(newExpiry.getMonth() + months);
+
+  // 1. Update Card Expiry
+  await db.update(schema.nfcCards)
+    .set({ expirationDate: newExpiry, updatedAt: now })
+    .where(eq(schema.nfcCards.uid, cardUid));
+
+  // 2. Mark old subscription as inactive (if we want to keep history correctly)
+  await db.update(schema.monthlySubscriptions)
+    .set({ status: 'expired' }) // or just leave as is if we use createdAt desc for latest
+    .where(eq(schema.monthlySubscriptions.id, subscription.id));
+
+  // 3. Create NEW transaction record in monthlySubscriptions
+  return await db.insert(schema.monthlySubscriptions).values({
+    cardUid,
+    customerName: subscription.customerName,
+    customerPhone: subscription.customerPhone,
+    photoProfile: subscription.photoProfile,
+    vehicleType: subscription.vehicleType,
+    vehiclePlate: subscription.vehiclePlate,
+    startDate: currentExpiry,
+    endDate: newExpiry,
+    price,
+    paymentMethod,
+    shiftId,
+    status: 'active',
+    createdAt: now,
+  });
 };
 
 export const convertToRegularTicket = async (cardUid: string) => {
@@ -302,13 +356,15 @@ export const checkNfcCardUsage = async (uid: string) => {
       .orderBy(desc(schema.monthlySubscriptions.createdAt))
       .limit(1);
 
+    const isExpired = !subscription || (card.expirationDate ? new Date() > card.expirationDate : true);
+
     return {
       status: 'existing',
       cardType: card.cardType,
       cardStatus: card.status,
       registeredPlate: card.registeredPlate,
       vehicleType: subscription?.vehicleType || 'motorbike',
-      isExpired: true,
+      isExpired,
       customerName: subscription?.customerName
     };
   }

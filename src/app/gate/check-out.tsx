@@ -1,10 +1,10 @@
 import { AppHeader, Button } from '@/shared/components/ui';
 import { COLORS, SHADOW } from '@/shared/constants/color.const';
 import { checkoutSchema, QRPaymentModal, QRPaymentModalRef, TCheckoutForm, TParkingEntry, useCheckOut, usePricingRules, useSystemConfig } from '@/shared/features/gate';
-import { useShiftStore } from '@/shared/features/shift';
 import { checkNfcCardUsage, getActiveEntryByCard } from '@/shared/features/gate/apis/gate.api';
 import { SearchActiveEntryModal, SearchActiveEntryModalRef } from '@/shared/features/gate/components/search-active-entry-modal';
 import { calculateParkingPricing, checkPlateMatch } from '@/shared/features/gate/utils';
+import { useShiftStore } from '@/shared/features/shift';
 import { valibotResolver } from '@hookform/resolvers/valibot';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { AlertCircle, AlertTriangle, Calculator, CheckCircle2, Circle, Info, MessageSquare, Wallet } from 'lucide-react-native';
@@ -116,18 +116,8 @@ export default function CheckOutScreen() {
   const isLostCard = checkoutType === 'lost';
 
   const pricing = useMemo(() => {
-    const basePricing = calculateParkingPricing(entry, sysConfig, pricingRules, isLostCard);
-    
-    if (isMonthly && !monthlyInfo?.isExpired) {
-      return {
-        ...basePricing,
-        fee: 0,
-        total: isLostCard ? basePricing.surcharge : 0
-      };
-    }
-    
-    return basePricing;
-  }, [entry, isLostCard, sysConfig, pricingRules, isMonthly, monthlyInfo]);
+    return calculateParkingPricing(entry, sysConfig, pricingRules, isLostCard, isMonthly);
+  }, [entry, isLostCard, sysConfig, pricingRules, isMonthly]);
 
   const onConfirmCheckout = (data: TCheckoutForm, paymentMethod: 'cash' | 'qr_transfer') => {
     if (!entry || !currentShift?.id) {

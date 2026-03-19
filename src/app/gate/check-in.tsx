@@ -1,11 +1,11 @@
-import { CheckInPhotoPreview, CheckInStatusCards, EditPlateModal, VehicleSelector } from '@/shared/features/gate';
+import { CheckInPhotoPreview, CheckInStatusCards, EditPlateModal, ExpiredMonthlyCardModal, ExpiredMonthlyCardModalRef, VehicleSelector } from '@/shared/features/gate';
 import { checkNfcCardUsage } from '@/shared/features/gate/apis/gate.api';
 import { useCheckIn } from '@/shared/features/gate/hooks';
 import { TVehicleType } from '@/shared/features/gate/types';
 import { useShiftStore } from '@/shared/features/shift';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, CheckCircle, Info } from 'lucide-react-native';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'react-native';
 
 export default function CheckInScreen() {
@@ -19,6 +19,8 @@ export default function CheckInScreen() {
   const [isMonthly, setIsMonthly] = useState(false);
   const [monthlyInfo, setMonthlyInfo] = useState<{ customerName?: string, registeredPlate?: string } | null>(null);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [refreshSignal, setRefreshSignal] = useState(0);
+  const modalRef = useRef<ExpiredMonthlyCardModalRef>(null);
 
   useEffect(() => {
     async function checkCard() {
@@ -40,13 +42,13 @@ export default function CheckInScreen() {
           }
 
           if (usage.isExpired) {
-            Alert.alert('Cảnh báo', 'Thẻ tháng này đã hết hạn!');
+            modalRef.current?.show(tagUid);
           }
         }
       }
     }
     checkCard();
-  }, [tagUid]);
+  }, [tagUid, refreshSignal]);
 
   useEffect(() => {
     if (plate && !isMonthly) setPlateText(plate);
@@ -149,6 +151,12 @@ export default function CheckInScreen() {
           )}
         </Pressable>
       </View>
+
+      <ExpiredMonthlyCardModal 
+        ref={modalRef}
+        onSuccess={() => setRefreshSignal(s => s + 1)}
+        onCancel={() => router.back()}
+      />
     </View>
   );
 }

@@ -75,6 +75,10 @@ export const monthlySubscriptions = sqliteTable('monthly_subscriptions', {
   startDate: integer('start_date', { mode: 'timestamp_ms' }).notNull(),
   endDate: integer('end_date', { mode: 'timestamp_ms' }).notNull(),
   price: integer('price').default(0),
+  paymentMethod: text('payment_method', { enum: ['cash', 'qr_transfer'] }).default('cash'),
+  shiftId: text('shift_id')
+    .notNull()
+    .references(() => shifts.id),
   status: text('status', { enum: ['active', 'expired', 'canceled'] }).default('active'),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }),
   synced: integer('synced', { mode: 'boolean' }).default(false),

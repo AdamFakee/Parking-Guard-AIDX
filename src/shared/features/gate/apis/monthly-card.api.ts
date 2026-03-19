@@ -11,6 +11,8 @@ export type MonthlySubscriptionParams = {
   startDate: Date;
   endDate: Date;
   price?: number;
+  shiftId: string;
+  paymentMethod: 'cash' | 'qr_transfer';
 };
 
 export const registerMonthlyCard = async (params: MonthlySubscriptionParams) => {
