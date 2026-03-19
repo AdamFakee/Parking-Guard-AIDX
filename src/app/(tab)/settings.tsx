@@ -1,15 +1,15 @@
 import { AppHeader, Button } from '@/shared/components/ui';
-import { CloseShiftModal, CloseShiftModalRef } from '@/shared/features/shift/components/close-shift-modal';
+import { SystemConfigModal, SystemConfigModalRef } from '@/shared/features/gate/components';
 import { useShiftStore } from '@/shared/features/shift';
+import { ShiftHistoryModal, ShiftHistoryModalRef } from '@/shared/features/shift/components';
+import { CloseShiftModal, CloseShiftModalRef } from '@/shared/features/shift/components/close-shift-modal';
 import { useAuthStore } from '@/shared/store';
 import { useRouter } from 'expo-router';
-import { SystemConfigModal, SystemConfigModalRef } from '@/shared/features/gate/components';
-import { ShiftHistoryModal, ShiftHistoryModalRef } from '@/shared/features/shift/components';
 import {
+  History,
   LogOut,
   Settings2,
-  User,
-  History
+  User
 } from 'lucide-react-native';
 import React, { useRef } from 'react';
 import {
@@ -43,7 +43,7 @@ export default function SettingsScreen() {
     ]);
   };
 
-  const handleRaCa = () => {
+  const handleCloseShift = () => {
     modalRef.current?.open();
   };
 
@@ -109,12 +109,12 @@ export default function SettingsScreen() {
         {/* Actions */}
         <View className="bg-white rounded-xl border border-slate-100 overflow-hidden shadow-sm mb-6">
           <Button
-            label={isStaff ? "Kết thúc ca làm (Ra ca)" : "Đăng xuất tài khoản"}
+            label="Kết thúc ca làm"
             variant="outline"
             className="border-0 rounded-none h-14"
             textClassName="text-red-500 font-bold"
             leftIcon={LogOut}
-            onPress={() => isStaff ? handleRaCa() : handleLogoutAdmin()}
+            onPress={handleCloseShift}
           />
         </View>
       </ScrollView>
