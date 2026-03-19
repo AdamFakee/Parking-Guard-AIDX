@@ -1,17 +1,22 @@
 import { Button, ControlledInput } from '@/shared/components/ui';
+import { TVehicleType } from '@/shared/features/gate';
 import { checkNfcCardUsage } from '@/shared/features/gate/apis/gate.api';
+import { QRPaymentModal, QRPaymentModalRef } from '@/shared/features/gate/components/qr-payment-modal';
 import { useMonthlyRegistration, useNfc, useSystemConfig } from '@/shared/features/gate/hooks';
+import { MonthlyRegistrationForm, MonthlyRegistrationSchema } from '@/shared/features/gate/schemas';
 import { useShiftStore } from '@/shared/features/shift';
 import { cn } from '@/shared/utils';
 import { valibotResolver } from '@hookform/resolvers/valibot';
 import { useRouter } from 'expo-router';
 import {
   ArrowLeft,
+  Banknote,
   Bike,
   Calendar,
   Camera,
   Car,
   CheckCircle2,
+  CreditCard,
   Scan,
   Trash2,
   Zap
@@ -26,26 +31,6 @@ import {
   View,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
-import * as v from 'valibot';
-
-// --- SCHEMA ---
-
-const MonthlyRegistrationSchema = v.object({
-  cardUid: v.pipe(v.string(), v.minLength(1, 'Vui lòng quét thẻ NFC')),
-  customerName: v.pipe(v.string(), v.minLength(1, 'Vui lòng nhập tên khách hàng')),
-  customerPhone: v.string(),
-  vehicleType: v.picklist(['motorbike', 'car', 'ebike']),
-  vehiclePlate: v.pipe(v.string(), v.minLength(1, 'Vui lòng nhập biển số')),
-  startDate: v.any(),
-  endDate: v.any(),
-  price: v.pipe(
-    v.string(),
-    v.regex(/^\d*$/, 'Vui lòng chỉ nhập số'),
-    v.transform((val) => Number(val || 0))
-  ),
-});
-
-type MonthlyRegistrationForm = v.InferOutput<typeof MonthlyRegistrationSchema>;
 
 const styles = {
   shadowSm: {
@@ -77,8 +62,8 @@ const VehicleTypeSelector = ({
   value, 
   onSelect 
 }: { 
-  value: 'motorbike' | 'car' | 'ebike', 
-  onSelect: (type: 'motorbike' | 'car' | 'ebike') => void 
+  value: TVehicleType, 
+  onSelect: (type: TVehicleType) => void 
 }) => {
   const options = [
     { type: 'motorbike' as const, label: 'Xe máy', icon: Bike },
@@ -205,6 +190,46 @@ const PhotoCaptureCard = ({
   </View>
 );
 
+const PaymentMethodSelector = ({ 
+  value, 
+  onSelect 
+}: { 
+  value: 'cash' | 'qr_transfer', 
+  onSelect: (method: 'cash' | 'qr_transfer') => void 
+}) => {
+  const options = [
+    { value: 'cash' as const, label: 'Tiền mặt', icon: Banknote },
+    { value: 'qr_transfer' as const, label: 'Chuyển khoản (QR)', icon: CreditCard },
+  ];
+
+  return (
+    <View className="gap-2">
+      <Text className="text-note1 text-slate-500 font-medium ml-1">Hình thức thanh toán</Text>
+      <View className="flex-row gap-3">
+        {options.map((opt) => {
+          const isSelected = value === opt.value;
+          return (
+            <TouchableOpacity
+              key={opt.value}
+              onPress={() => onSelect(opt.value)}
+              className={cn(
+                'flex-1 flex-row items-center justify-center gap-2 py-4 rounded-2xl border',
+                isSelected ? 'bg-blue-500 border-blue-500' : 'bg-white border-slate-200'
+              )}
+              style={!isSelected ? styles.shadowSm : undefined}
+            >
+              <opt.icon size={18} color={isSelected ? 'white' : '#64748B'} />
+              <Text className={cn('font-bold text-xs', isSelected ? 'text-white' : 'text-slate-500')}>
+                {opt.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </View>
+  );
+};
+
 export default function MonthlyRegisterScreen() {
   const router = useRouter();
   const [photo, setPhoto] = useState<string | null>(null);
@@ -212,6 +237,7 @@ export default function MonthlyRegisterScreen() {
   const { currentShift } = useShiftStore();
   const { data: config } = useSystemConfig();
   const { mutateAsync: register, isPending } = useMonthlyRegistration();
+  const qrRef = React.useRef<QRPaymentModalRef>(null);
 
   const { control, handleSubmit, setValue, watch, reset } = useForm<MonthlyRegistrationForm>({
     resolver: valibotResolver(MonthlyRegistrationSchema as any),
@@ -224,6 +250,7 @@ export default function MonthlyRegisterScreen() {
       startDate: new Date(),
       endDate: new Date(new Date().setMonth(new Date().getMonth() + 1)),
       price: '100000' as any,
+      paymentMethod: 'cash',
     },
   });
 
@@ -301,7 +328,7 @@ export default function MonthlyRegisterScreen() {
     };
   }, [stopListening]);
 
-  const onSave = async (data: MonthlyRegistrationForm) => {
+  const handleRegister = useCallback(async (data: MonthlyRegistrationForm) => {
     try {
       if (!photo) {
         Alert.alert('Thiếu ảnh', 'Vui lòng chụp ảnh khách hàng/phương tiện');
@@ -317,7 +344,6 @@ export default function MonthlyRegisterScreen() {
         ...data,
         photoProfile: photo,
         shiftId: currentShift.id,
-        paymentMethod: 'cash', // Default to cash
       });
 
       Alert.alert('Thành công', 'Đã đăng ký thẻ tháng thành công', [
@@ -325,10 +351,25 @@ export default function MonthlyRegisterScreen() {
       ]);
       reset();
       setPhoto(null);
+      qrRef.current?.close();
     } catch (error) {
       console.error(error);
       Alert.alert('Lỗi', 'Không thể đăng ký thẻ tháng');
     }
+  }, [photo, currentShift, register, reset, router]);
+
+  const onSave = async (data: MonthlyRegistrationForm) => {
+    if (!photo) {
+      Alert.alert('Thiếu ảnh', 'Vui lòng chụp ảnh khách hàng/phương tiện');
+      return;
+    }
+
+    if (data.paymentMethod === 'qr_transfer') {
+      qrRef.current?.open(data.price, `DK_${data.vehiclePlate.replace(/[^A-Za-z0-9]/g, '')}`);
+      return;
+    }
+
+    await handleRegister(data);
   };
 
   return (
@@ -398,6 +439,11 @@ export default function MonthlyRegisterScreen() {
             placeholder="09xxx..."
           />
 
+          <PaymentMethodSelector 
+            value={watch('paymentMethod')} 
+            onSelect={(method) => setValue('paymentMethod', method)} 
+          />
+
           <View className="flex-row gap-4">
             <View className="flex-1">
               <ControlledInput
@@ -422,7 +468,7 @@ export default function MonthlyRegisterScreen() {
 
         <View className="mt-4 pb-12">
           <Button
-            label="Xác nhận Đăng ký"
+            label={watch('paymentMethod') === 'qr_transfer' ? "Thanh toán & Đăng ký" : "Xác nhận Đăng ký"}
             onPress={handleSubmit(onSave)}
             loading={isPending}
             disabled={isPending}
@@ -432,6 +478,12 @@ export default function MonthlyRegisterScreen() {
           />
         </View>
       </KeyboardAwareScrollView>
+
+      <QRPaymentModal 
+        ref={qrRef}
+        onConfirm={handleSubmit(handleRegister)}
+        isPending={isPending}
+      />
     </View>
   );
 }
