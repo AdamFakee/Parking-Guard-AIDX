@@ -69,8 +69,7 @@ export const QRPaymentModal = forwardRef<QRPaymentModalRef, Props>(({ onConfirm,
               onPress={handleConfirm}
               label={isPending ? 'Đang xử lý giao dịch...' : 'TÔI ĐÃ NHẬN TIỀN'}
               leftIcon={!isPending ? Check : undefined}
-              className={`w-full rounded-[24px] border-0 h-16 shadow-xl ${isPending ? 'bg-slate-300 dark:bg-slate-700' : 'bg-green-600 shadow-green-600/20'}`}
-              textClassName="text-white font-black text-[16px] uppercase tracking-wider"
+              className={'h-16'}
             />
           </View>
         </View>

@@ -164,8 +164,8 @@ export const CloseShiftModal = forwardRef<CloseShiftModalRef>((_, ref) => {
 
                 <Button
                   label="Hủy bỏ"
-                  variant="secondary"
-                  className="mt-3 border-0"
+                  variant="outline"
+                  className="mt-3"
                   onPress={() => setVisible(false)}
                 />
               </View>

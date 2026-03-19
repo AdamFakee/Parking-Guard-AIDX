@@ -1,12 +1,13 @@
+import { AppHeader, Button } from '@/shared/components/ui';
 import { CheckInPhotoPreview, CheckInStatusCards, EditPlateModal, ExpiredMonthlyCardModal, ExpiredMonthlyCardModalRef, VehicleSelector } from '@/shared/features/gate';
 import { checkNfcCardUsage } from '@/shared/features/gate/apis/gate.api';
 import { useCheckIn } from '@/shared/features/gate/hooks';
 import { TVehicleType } from '@/shared/features/gate/types';
 import { useShiftStore } from '@/shared/features/shift';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, CheckCircle, Info } from 'lucide-react-native';
+import { CheckCircle, Info } from 'lucide-react-native';
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, ScrollView, Text, View } from 'react-native';
 
 export default function CheckInScreen() {
   const router = useRouter();
@@ -86,13 +87,7 @@ export default function CheckInScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: 'white' }}>
       {/* Header */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: '#f3f4f6', backgroundColor: 'white', paddingTop: 48 }}>
-        <Pressable onPress={() => router.back()} style={{ padding: 8 }}>
-          <ArrowLeft size={24} color="#1E293B" />
-        </Pressable>
-        <Text style={{ fontSize: 18, fontWeight: 'bold' }}>Xác nhận xe vào</Text>
-        <View style={{ width: 40 }} />
-      </View>
+      <AppHeader title="Xác nhận xe vào" />
 
       <ScrollView style={{ flex: 1, backgroundColor: 'white', padding: 16 }} contentContainerStyle={{ paddingBottom: 100 }}>
         {isMonthly && (
@@ -134,22 +129,16 @@ export default function CheckInScreen() {
         onSave={handleSavePlate}
       />
 
-      {/* Bottom Action */}
-      <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: 16, backgroundColor: 'rgba(255, 255, 255, 0.95)', borderTopWidth: 1, borderTopColor: '#f1f5f9', paddingBottom: 32 }}>
-        <Pressable 
+      <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: 16, backgroundColor: 'rgba(255, 255, 255, 0.95)', borderTopWidth: 1, borderTopColor: '#f1f5f9', paddingBottom: 32 , height: 100}}>
+        <Button 
+          label="XÁC NHẬN XE VÀO"
           onPress={handleConfirm}
+          loading={isPending}
           disabled={isPending}
-          style={{ width: '100%', paddingVertical: 16, borderRadius: 8, backgroundColor: isMonthly ? '#3b82f6' : '#22c55e', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', opacity: isPending ? 0.7 : 1 }}
-        >
-          {isPending ? (
-            <ActivityIndicator color="white" />
-          ) : (
-            <>
-              <CheckCircle size={24} color="white" style={{ marginRight: 8 }} />
-              <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 18 }}>XÁC NHẬN XE VÀO</Text>
-            </>
-          )}
-        </Pressable>
+          leftIcon={CheckCircle}
+          className="flex-1"
+          textClassName="text-lg font-bold"
+        />
       </View>
 
       <ExpiredMonthlyCardModal 

@@ -43,6 +43,10 @@ interface AppHeaderProps {
    * Color of the bottom border.
    */
   borderBottomColor?: string;
+  /**
+   * Title color class (optional override).
+   */
+  titleClassName?: string;
 }
 
 /**
@@ -56,8 +60,8 @@ export const AppHeader = ({
   rightIcon,
   onRightPress,
   showLeftButton = true,
-  showBorderBottom = false,
-  borderBottomColor = COLORS.slate[700],
+  showBorderBottom = true,
+  borderBottomColor,
 }: AppHeaderProps) => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -79,16 +83,30 @@ export const AppHeader = ({
   const getColors = () => {
     switch (variant) {
       case 'dark':
-        return { bg: COLORS.app.darker, text: 'text-slate-100', icon: COLORS.slate[100] };
+        return { 
+          bg: COLORS.app.darker, 
+          text: 'text-white', 
+          icon: '#F1F5F9',
+          border: 'rgba(255,255,255,0.06)' 
+        };
       case 'white':
-        return { bg: COLORS.background.white, text: 'text-slate-700', icon: COLORS.slate[700] };
       case 'surface':
       default:
-        return { bg: COLORS.app.surface, text: 'text-slate-100', icon: COLORS.slate[100] };
+        return { 
+          bg: '#FFFFFF', 
+          text: 'text-slate-900', 
+          icon: '#1E293B',
+          border: '#F1F5F9'
+        };
     }
   };
 
-  const { bg: backgroundColor, text: textColorClass, icon: iconColor } = getColors();
+  const { 
+    bg: backgroundColor, 
+    text: textColorClass, 
+    icon: iconColor,
+    border: defaultBorderColor 
+  } = getColors();
 
   /**
    * Renders the right icon based on its type.
@@ -121,44 +139,55 @@ export const AppHeader = ({
         { 
           backgroundColor,
           paddingTop: insets.top, 
-          height: LAYOUT.headerHeight + insets.top / 2 
+          height: LAYOUT.headerHeight + insets.top,
         }, 
-        showBorderBottom && { borderBottomWidth: 1, borderBottomColor }
+        showBorderBottom && { 
+          borderBottomWidth: 1, 
+          borderBottomColor: borderBottomColor || defaultBorderColor 
+        }
       ]}
-      className="w-full flex-row items-center justify-between px-4"
+      className="w-full flex-row items-center justify-between px-6"
     >
       {/* Left Section: Back Button */}
-      <View className="w-12 items-start">
+      <View className="w-10 items-start justify-center">
         {showLeftButton && (
           <Pressable
             onPress={handleLeftPress}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+            hitSlop={12}
+            className="size-10 items-center justify-center -ml-2 rounded-full active:bg-slate-100/50"
+            style={({ pressed }) => ({
+              transform: [{ scale: pressed ? 0.92 : 1 }],
+              opacity: pressed ? 0.8 : 1,
+            })}
           >
-            <ChevronLeft size={30} color={iconColor} />
+            <ChevronLeft size={28} color={iconColor} strokeWidth={2.5} />
           </Pressable>
         )}
       </View>
-
+ 
       {/* Center Section: Title */}
-      <View className="flex-1 items-center justify-center">
+      <View className="flex-1 items-center justify-center py-2">
         {title && (
           <Text
-            className={'text-medium text-center ' + textColorClass}
+            className={`text-lg font-black text-center tracking-tight ${textColorClass}`}
             numberOfLines={1}
           >
             {title}
           </Text>
         )}
       </View>
-
+ 
       {/* Right Section: Action Icon */}
-      <View className="w-12 items-end">
+      <View className="w-10 items-end justify-center">
         {rightIcon && (
           <Pressable
             onPress={onRightPress}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+            hitSlop={12}
+            className="size-10 items-center justify-center -mr-2 rounded-full active:bg-slate-100/50"
+            style={({ pressed }) => ({
+              transform: [{ scale: pressed ? 0.92 : 1 }],
+              opacity: pressed ? 0.8 : 1,
+            })}
           >
             {renderRightIcon()}
           </Pressable>

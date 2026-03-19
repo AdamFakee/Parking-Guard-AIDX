@@ -1,3 +1,4 @@
+import { Button } from '@/shared/components/ui';
 import { useShiftStore } from '@/shared/features/shift/store/useShiftStore';
 import { useFocusEffect, useRouter } from 'expo-router';
 import {
@@ -231,29 +232,34 @@ export const Dashboard = () => {
         {/* Manual Actions */}
         <View className="px-5 pb-10 gap-4">
           <View className="flex-row gap-4">
-            <Pressable 
-              onPress={() => router.push('/gate/scan-plate?mode=in' as any)}
-              className="flex-1 flex-col items-center justify-center gap-2 py-5 bg-blue-500 rounded-2xl shadow-md active:scale-95"
-            >
-              <LucideArrowRightToLine size={24} color="white" />
-              <Text className="text-white font-bold text-xs">Xe vào</Text>
-            </Pressable>
-            <Pressable 
-              onPress={() => router.push('/gate/scan-plate?mode=out' as any)}
-              className="flex-1 flex-col items-center justify-center gap-2 py-5 bg-orange-500 rounded-2xl shadow-md active:scale-95"
-            >
-              <LucideArrowLeftToLine size={24} color="white" />
-              <Text className="text-white font-bold text-xs">Xe ra</Text>
-            </Pressable>
+            <View className="flex-1">
+              <Button 
+                label="Xe vào"
+                onPress={() => router.push('/gate/scan-plate?mode=in' as any)}
+                leftIcon={LucideArrowRightToLine}
+                className="h-20 bg-primary border-primary/90"
+                iconSize={28}
+                textClassName="text-lg"
+              />
+            </View>
+            <View className="flex-1">
+              <Button 
+                label="Xe ra"
+                onPress={() => router.push('/gate/scan-plate?mode=out' as any)}
+                rightIcon={LucideArrowLeftToLine}
+                className="h-20 bg-brand-orange border-brand-orange/90"
+                iconSize={28}
+                textClassName="text-lg"
+              />
+            </View>
           </View>
           
-          <Pressable 
+          <Button 
+            label="Đăng ký thẻ tháng"
+            variant="outline"
             onPress={() => router.push('/gate/monthly-register' as any)}
-            className="flex-row items-center justify-center gap-3 py-4 bg-slate-800 rounded-2xl shadow-md active:scale-95 border border-slate-700"
-          >
-            <CreditCard size={20} color="#3B82F6" />
-            <Text className="text-white font-bold uppercase tracking-wider">Đăng ký thẻ tháng</Text>
-          </Pressable>
+            leftIcon={CreditCard}
+          />
         </View>
       </ScrollView>
 

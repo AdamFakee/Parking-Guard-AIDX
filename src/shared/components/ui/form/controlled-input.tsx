@@ -47,7 +47,7 @@ export function ControlledInput<T extends FieldValues>({
       {(label || topRightElement) && (
         <View className="flex-row items-center justify-between ml-1">
           {label ? (
-            <Text className="text-note1 text-slate-100 font-medium">
+            <Text className="text-note1 text-black font-medium">
               {label}
               {required && <Text className="text-brand-red"> *</Text>}
             </Text>

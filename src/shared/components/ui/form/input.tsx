@@ -11,11 +11,12 @@ export const Input = ({ className, error, ...props }: InputProps) => {
   return (
     <TextInput
       className={cn(
-        'border bg-app-surface px-4 py-3 text-lg text-slate-100 border-slate-700 h-[54px] rounded-lg',
-        error ? 'bg-brand-red/10 border-brand-red' : null,
+        'border bg-[#F8FAFC] px-6 text-lg font-bold text-slate-900 border-[#E2E8F0] h-16 rounded-[24px]',
+        error ? 'bg-red-50 border-red-200 text-red-600' : null,
         className,
       )}
-      placeholderClassName='text-slate-400'
+      placeholderClassName="text-slate-400 font-normal"
+      placeholderTextColor="#94A3B8"
       {...props}
     />
   )
