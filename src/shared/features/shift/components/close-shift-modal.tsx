@@ -17,7 +17,6 @@ import {
   Text,
   View
 } from 'react-native';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import * as v from 'valibot';
 import { useCloseShift } from '../hooks';
 import { useShiftStore } from '../store';
@@ -118,12 +117,8 @@ export const CloseShiftModal = forwardRef<CloseShiftModalRef>((_, ref) => {
       onRequestClose={() => setVisible(false)}
     >
       <View className="flex-1 bg-black/60 justify-end">
-        <KeyboardAwareScrollView
-          bottomOffset={20}
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end' }}
-        >
-          <View className="bg-white rounded-t-3xl p-6 min-h-[70%]">
+        <View className="flex-1 justify-end">
+          <View className="bg-white rounded-t-3xl p-6 min-h-[92%]">
             <View className="w-12 h-1 bg-slate-200 rounded-full self-center mb-6" />
 
             <Text className="text-2xl font-black text-slate-900 mb-1">
@@ -184,8 +179,12 @@ export const CloseShiftModal = forwardRef<CloseShiftModalRef>((_, ref) => {
                       <Text className="text-slate-600">Doanh thu tiền mặt (+)</Text>
                       <Text className="font-bold text-green-600">{formatCurrency(cashRevenue)}</Text>
                     </View>
+                    <View className="flex-row justify-between py-2 border-b border-slate-200">
+                      <Text className="text-slate-600">Doanh thu QR (CK)</Text>
+                      <Text className="font-bold text-blue-600">{formatCurrency(qrRevenue)}</Text>
+                    </View>
                     <View className="flex-row justify-between py-2 bg-blue-50/50">
-                      <Text className="text-blue-900 font-bold">Tiền kỳ vọng (=)</Text>
+                      <Text className="text-blue-900 font-bold">Tiền mặt kỳ vọng (=)</Text>
                       <Text className="text-blue-900 font-black">{formatCurrency(expectedCash)}</Text>
                     </View>
                     <View className="flex-row justify-between py-2 border-t border-slate-200 mt-2">
@@ -244,7 +243,7 @@ export const CloseShiftModal = forwardRef<CloseShiftModalRef>((_, ref) => {
               </View>
             )}
           </View>
-        </KeyboardAwareScrollView>
+        </View>
       </View>
     </Modal>
   );

@@ -6,24 +6,24 @@ import { cn } from '@/shared/utils';
 import { valibotResolver } from '@hookform/resolvers/valibot';
 import { useRouter } from 'expo-router';
 import {
-    ArrowLeft,
-    Bike,
-    Calendar,
-    Camera,
-    Car,
-    CheckCircle2,
-    Scan,
-    Trash2,
-    Zap
+  ArrowLeft,
+  Bike,
+  Calendar,
+  Camera,
+  Car,
+  CheckCircle2,
+  Scan,
+  Trash2,
+  Zap
 } from 'lucide-react-native';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import {
-    Alert,
-    Image,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Image,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import * as v from 'valibot';
