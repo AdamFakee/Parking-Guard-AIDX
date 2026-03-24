@@ -1,8 +1,10 @@
 import {
   checkLegitPlate,
+  formatDisplayPlate,
   mlKitResultToOcrLines,
   processOcrResult,
 } from '@/shared/features/gate/utils';
+import { useTensorflow } from '@/shared/providers/TensorflowProvider';
 import TextRecognition from '@react-native-ml-kit/text-recognition';
 import {
   AlphaType,
@@ -12,9 +14,11 @@ import {
 import * as ImageManipulator from 'expo-image-manipulator';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
+  AlertTriangle,
   ArrowLeft,
   ArrowRight,
   Camera as CameraIcon,
+  Info,
   RotateCcw,
   X,
 } from 'lucide-react-native';
@@ -31,7 +35,6 @@ import {
   Text,
   View,
 } from 'react-native';
-import { useTensorflow } from '@/shared/providers/TensorflowProvider';
 import {
   Camera,
   useCameraDevice,
@@ -229,6 +232,7 @@ export default function ScanPlateScreen() {
 
   const [detectedPlate, setDetectedPlate] = useState<string>('');
   const [confidence, setConfidence] = useState<number>(0);
+  const [isCorrected, setIsCorrected] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
 
   const [capturedFull, setCapturedFull] = useState<string | null>(null);
@@ -377,9 +381,12 @@ export default function ScanPlateScreen() {
 
       if (result?.blocks?.length) {
         const lines = mlKitResultToOcrLines(result as any);
-        const { text: plate, confidence: conf } = processOcrResult(lines, ocrTargetHeight);
+        const { text: plate, confidence: conf, isCorrected: corrected } = processOcrResult(lines, ocrTargetHeight);
         finalPlate = plate;
         finalConf  = conf;
+        setIsCorrected(corrected);
+      } else {
+        setIsCorrected(false);
       }
 
       const t_total = Date.now() - t0;
@@ -411,6 +418,7 @@ export default function ScanPlateScreen() {
   const handleReset = () => {
     setDetectedPlate('');
     setConfidence(0);
+    setIsCorrected(false);
     setCapturedFull(null);
     setCapturedCrop(null);
   };
@@ -514,7 +522,7 @@ export default function ScanPlateScreen() {
         <View style={styles.plateBox}>
           <Text style={styles.plateLabel}>Biển số nhận diện</Text>
           <Text style={[styles.plateValue, isValid && styles.plateValueValid]}>
-            {detectedPlate || '—'}
+            {formatDisplayPlate(detectedPlate) || '—'}
           </Text>
           {confidence > 0 && (
             <Text style={styles.confText}>Độ tin cậy: {confidence.toFixed(0)}%</Text>
@@ -604,12 +612,12 @@ export default function ScanPlateScreen() {
                 </View>
               </View>
 
-              {/* Data */}
+              {/* Data Section */}
               <View style={styles.dataSection}>
                 <View style={styles.resultRow}>
                   <Text style={styles.resultLabel}>Biển số:</Text>
                   <Text style={[styles.resultValue, isValid && styles.resultValueValid]}>
-                    {detectedPlate || '—'}
+                    {formatDisplayPlate(detectedPlate) || '—'}
                   </Text>
                 </View>
                 {confidence > 0 && (
@@ -619,6 +627,31 @@ export default function ScanPlateScreen() {
                   </View>
                 )}
               </View>
+
+              {/* Warning/Info Box */}
+              {!isValid && detectedPlate !== '' && (
+                <View style={[styles.alertBox, styles.warningBox]}>
+                  <AlertTriangle size={20} color="#f59e0b" />
+                  <View style={styles.alertTextWrapper}>
+                    <Text style={styles.warningTitle}>Phát hiện sai định dạng</Text>
+                    <Text style={styles.alertText}>
+                      Biển số này không khớp với định dạng chuẩn. Vui lòng kiểm tra lại.
+                    </Text>
+                  </View>
+                </View>
+              )}
+
+              {isCorrected && (
+                <View style={[styles.alertBox, styles.infoBox]}>
+                  <Info size={20} color="#3b82f6" />
+                  <View style={styles.alertTextWrapper}>
+                    <Text style={styles.infoTitle}>Đã tự động sửa lỗi</Text>
+                    <Text style={styles.alertText}>
+                      Hệ thống đã tự động sửa các lỗi đọc nhầm (T→7, L→4, D→0...) dựa trên quy tắc biển số VN.
+                    </Text>
+                  </View>
+                </View>
+              )}
 
               {/* Performance */}
               <View style={[styles.dataSection, styles.perfSection]}>
@@ -1082,5 +1115,42 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: '700',
     fontSize: 15,
+  },
+
+  // Alert Boxes
+  alertBox: {
+    flexDirection: 'row',
+    borderRadius: 16,
+    padding: 16,
+    gap: 12,
+    borderWidth: 1,
+  },
+  alertTextWrapper: {
+    flex: 1,
+  },
+  warningBox: {
+    backgroundColor: 'rgba(245,158,11,0.1)',
+    borderColor: 'rgba(245,158,11,0.2)',
+  },
+  infoBox: {
+    backgroundColor: 'rgba(59,130,246,0.1)',
+    borderColor: 'rgba(59,130,246,0.2)',
+  },
+  warningTitle: {
+    color: '#f59e0b',
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  infoTitle: {
+    color: '#3b82f6',
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  alertText: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 12,
+    lineHeight: 18,
   },
 });

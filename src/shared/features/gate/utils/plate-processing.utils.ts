@@ -28,10 +28,82 @@ export interface OcrLine {
 }
 
 export interface ProcessedPlate {
-  /** Biển số đã làm sạch, ví dụ "51A-12345" */
+  /** Biển số đã làm sạch và format, ví dụ "51A12345" */
   text: string;
   /** Độ tự tin trung bình [0..100] (thang %) */
   confidence: number;
+  /** Liệu biển số có được tự động sửa lỗi qua formatPlate hay không */
+  isCorrected: boolean;
+}
+
+// ─────────────────────────────────────────────────────────────
+// 1. formatPlate (OCR Correction)
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Xử lý các lỗi nhận diện OCR phổ biến dựa trên cấu trúc biển số Việt Nam.
+ * Áp dụng theo yêu cầu:
+ * - 2 chữ đầu: Bắt buộc là SỐ. Sửa T -> 7, L -> 4.
+ * - 2 chữ tiếp theo: BỎ QUA (giữ nguyên vì có thể là chữ + số).
+ * - 3-5 số tiếp theo: Bắt buộc là SỐ. Sửa D -> 0, L -> 4, T -> 7.
+ */
+export function formatPlate(text: string | null | undefined): string {
+  if (!text) return '';
+
+  // 1. Loại bỏ các ký tự đặc biệt, viết hoa
+  const cleaned = text.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (cleaned.length < 3) return cleaned;
+
+  const chars = cleaned.split('');
+
+  // 2. Quy tắc 1: 2 chữ đầu (Mã tỉnh) -> SỐ
+  for (let i = 0; i < Math.min(2, chars.length); i++) {
+    if (chars[i] === 'T') chars[i] = '7';
+    if (chars[i] === 'L') chars[i] = '4';
+  }
+
+  // 3. Quy tắc 2: 2 chữ tiếp theo (Seri) -> BỎ QUA (skip index 2, 3)
+
+  // 4. Quy tắc 3: Các số tiếp theo (Số thứ tự) -> SỐ (từ index 4 trở đi)
+  for (let i = 4; i < chars.length; i++) {
+    if (chars[i] === 'D') chars[i] = '0';
+    if (chars[i] === 'L') chars[i] = '4';
+    if (chars[i] === 'T') chars[i] = '7';
+  }
+
+  return chars.join('');
+}
+
+/**
+ * Định dạng lại biển số cho dễ đọc theo quy tắc:
+ * 4 số: NN-XX-AAAA
+ * 5 số: NN-XX-AAAAA
+ */
+export function formatDisplayPlate(plate: string | null | undefined): string {
+  if (!plate || plate === '—') return plate || '—';
+
+  // 1. Làm sạch
+  const cleaned = plate.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (cleaned.length < 5) return cleaned;
+
+  // 2. Tách bộ phận: NN (Mã tỉnh) - XX (Seri) - AAAA(A) (Số thứ tự)
+  const nn = cleaned.slice(0, 2);
+  let xx = '';
+  let serial = '';
+
+  // Dựa vào tổng chiều dài để xác định Seri (XX) là 1 hay 2 ký tự.
+  // Theo quy tắc người dùng cung cấp và logic sửa lỗi OCR ở trên:
+  // - Nếu >= 8 ký tự: NN-XX-AAAA(A) (XX chiếm index 2, 3)
+  // - Nếu < 8 ký tự: NN-X-AAAA (X chiếm index 2)
+  if (cleaned.length >= 8) {
+    xx = cleaned.slice(2, 4);
+    serial = cleaned.slice(4);
+  } else {
+    xx = cleaned.slice(2, 3);
+    serial = cleaned.slice(3);
+  }
+
+  return `${nn}-${xx}-${serial}`;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -59,7 +131,10 @@ export interface ProcessedPlate {
  *               → bắt các biển VN kiểu "51A12345", "90B245230"
  */
 export function checkLegitPlate(s: string): boolean {
-  const cleaned = s.replace(/[.\-\s]/g, '');
+  // Format lại trước khi check
+  const cleaned = formatPlate(s);
+
+  if (!cleaned) return false;
 
   // pattern1: chuỗi toàn là 2 chữ + 4 số
   const pattern1 = /^[A-Za-z]{2}[0-9]{4}$/;
@@ -110,7 +185,7 @@ export function checkLegitPlate(s: string): boolean {
  */
 export function processOcrResult(lines: OcrLine[], imgHeight: number): ProcessedPlate {
   if (!lines || lines.length === 0) {
-    return { text: '', confidence: 0 };
+    return { text: '', confidence: 0, isCorrected: false };
   }
 
   // Tính center_y cho mỗi line rồi sort từ trên xuống dưới
@@ -144,26 +219,9 @@ export function processOcrResult(lines: OcrLine[], imgHeight: number): Processed
       ? `${line1Parts.join('')}-${line2Parts.join('')}`
       : line1Parts.join('');
 
-  // Clean: chỉ giữ [A-Za-z0-9\-.], sau đó trim dấu '-' hai đầu
-  let cleanedText = rawText.replace(/[^A-Za-z0-9\-.]/g, '').replace(/^-+|-+$/g, '');
-
-  // ── Fix lỗi OCR: C → 0 tại vị trí thứ 3 của phần đầu ──
-  // Python: if len(temp) > 2 and temp[0].isalpha() and temp[2] == 'C':
-  //            parts[0] = parts[0][:2] + '0' + parts[0][3:]
-  //
-  // Biển VN: "51C-12345" → vị trí 0="5", 1="1", 2="C" (sai) → sửa thành "510-12345"
-  const temp = cleanedText.replace(/[-\.]/g, '');
-  if (
-    temp.length > 2 &&
-    /[A-Za-z]/.test(temp[0]) === false && // char[0] KHÔNG phải chữ → là số tỉnh
-    temp[2] === 'C'
-  ) {
-    const parts = cleanedText.split('-');
-    if (parts.length > 0 && parts[0].length >= 3 && parts[0][2] === 'C') {
-      parts[0] = parts[0].slice(0, 2) + '0' + parts[0].slice(3);
-      cleanedText = parts.join('-');
-    }
-  }
+  // Clean và format lại theo quy tắc sửa lỗi OCR
+  const cleanedText = formatPlate(rawText);
+  const isCorrected = cleanedText !== rawText.toUpperCase().replace(/[^A-Z0-9]/g, '');
 
   // Tính confidence trung bình (scale 0–100 như Python)
   const avgConf =
@@ -174,6 +232,7 @@ export function processOcrResult(lines: OcrLine[], imgHeight: number): Processed
   return {
     text: cleanedText,
     confidence: avgConf,
+    isCorrected,
   };
 }
 
@@ -189,7 +248,7 @@ export function processOcrResult(lines: OcrLine[], imgHeight: number): Processed
  *   "51A-12345"  "90B2-45230"  "51A12345"  "90B245230"
  */
 export function isValidPlate(plate: string): boolean {
-  const cleaned = plate.replace(/[-\.]/g, '');
+  const cleaned = formatPlate(plate);
   // 2 số (tỉnh) + 1-2 chữ (loại xe) + 3-5 số (serial)
   return /^[0-9]{2}[A-Z]{1,2}[0-9]{3,5}$/.test(cleaned);
 }
