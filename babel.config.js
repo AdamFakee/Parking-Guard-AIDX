@@ -13,7 +13,8 @@ module.exports = function (api) {
         },
       ],
       ['inline-import', { extensions: ['.sql'] }],
-      'react-native-reanimated/plugin',
+      ['react-native-worklets-core/plugin'],
+      ['react-native-reanimated/plugin'],
     ],
   }
 }
