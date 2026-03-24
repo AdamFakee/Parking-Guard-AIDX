@@ -46,7 +46,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 // ─────────────────────────────────────────────
 const MODEL_INPUT_SIZE = 640;
 const YOLO_CONF_THRESHOLD = 0.5;
-const CROP_MARGIN = 0.08; // 8% padding quanh biển số
+const CROP_MARGIN = 0; // Tắt padding quanh biển số
 
 // ─────────────────────────────────────────────
 // Types
@@ -92,7 +92,7 @@ function calcLetterbox(origW: number, origH: number): LetterboxInfo {
 // Decode ảnh JPEG → Float32Array RGB (0→1)
 // Dùng Skia để đọc pixel thật thay vì mảng 0 giả
 // ─────────────────────────────────────────────
-async function decodeImageToFloat32(uri: string): Promise<Float32Array> {
+async function decodeImageToFloat32(uri: string, lb: LetterboxInfo): Promise<Float32Array> {
   const skData = await Skia.Data.fromURI(uri);
   const image = Skia.Image.MakeImageFromEncoded(skData);
 
@@ -100,13 +100,25 @@ async function decodeImageToFloat32(uri: string): Promise<Float32Array> {
     throw new Error(`[Skia] Không decode được ảnh: ${uri}`);
   }
 
-  const w = image.width();
-  const h = image.height();
+  // 1. Tạo surface 640x640 để vẽ letterbox (nền đen)
+  const surface = Skia.Surface.Make(MODEL_INPUT_SIZE, MODEL_INPUT_SIZE);
+  if (!surface) throw new Error('[Skia] Không tạo được surface');
 
-  // Đọc pixel RGBA thô
-  const pixels = image.readPixels(0, 0, {
-    width: w,
-    height: h,
+  const canvas = surface.getCanvas();
+  canvas.clear(Skia.Color('black')); // Nền đen cho vùng padding
+
+  // 2. Vẽ ảnh gốc vào vùng đã tính toán (giữ tỷ lệ)
+  const src = Skia.XYWHRect(0, 0, image.width(), image.height());
+  const dst = Skia.XYWHRect(lb.padX, lb.padY, lb.scaledW, lb.scaledH);
+  canvas.drawImageRect(image, src, dst, Skia.Paint());
+
+  // 3. Lấy ảnh đã scale & pad từ surface
+  const finalImage = surface.makeImageSnapshot();
+
+  // 4. Đọc pixel thô (RGBA_8888)
+  const pixels = finalImage.readPixels(0, 0, {
+    width: MODEL_INPUT_SIZE,
+    height: MODEL_INPUT_SIZE,
     colorType: ColorType.RGBA_8888,
     alphaType: AlphaType.Unpremul,
   }) as Uint8Array;
@@ -115,8 +127,8 @@ async function decodeImageToFloat32(uri: string): Promise<Float32Array> {
     throw new Error('[Skia] readPixels trả về null');
   }
 
-  // RGBA → RGB Float32 chuẩn hóa 0→1
-  const totalPixels = w * h;
+  // 5. RGBA → RGB Float32 chuẩn hóa 0→1
+  const totalPixels = MODEL_INPUT_SIZE * MODEL_INPUT_SIZE;
   const result = new Float32Array(totalPixels * 3);
 
   for (let i = 0, j = 0; i < totalPixels; i++, j += 3) {
@@ -124,7 +136,6 @@ async function decodeImageToFloat32(uri: string): Promise<Float32Array> {
     result[j]     = pixels[base]     / 255.0; // R
     result[j + 1] = pixels[base + 1] / 255.0; // G
     result[j + 2] = pixels[base + 2] / 255.0; // B
-    // Bỏ Alpha (index base+3)
   }
 
   return result;
@@ -293,33 +304,22 @@ export default function ScanPlateScreen() {
       console.log(`[1] Chụp xong: ${origW}×${origH} — ${t_capture}ms`);
 
       const t1 = Date.now();
-      // ── Bước 2: Letterbox resize về 640×640 (giữ tỷ lệ) ──
+      // ── Bước 2: Tính thông số letterbox ──
       const lb = calcLetterbox(origW, origH);
-
-      const scaledImage = await ImageManipulator.manipulateAsync(
-        rawUri,
-        [{ resize: { width: lb.scaledW, height: lb.scaledH } }],
-        { format: ImageManipulator.SaveFormat.JPEG, compress: 0.95 },
-      );
-
-      const modelInput = await ImageManipulator.manipulateAsync(
-        scaledImage.uri,
-        [{ resize: { width: MODEL_INPUT_SIZE, height: MODEL_INPUT_SIZE } }],
-        { format: ImageManipulator.SaveFormat.JPEG, compress: 0.95 },
-      );
       t_preprocess = Date.now() - t1;
-      console.log(`[2] Resize xong — ${t_preprocess}ms`);
+      console.log(`[2] Calc letterbox — ${t_preprocess}ms`);
 
       const t2 = Date.now();
-      // ── Bước 3: Decode ảnh → Float32Array ──
+      // ── Bước 3: Resize & Decode bằng Skia (Tránh 2 lần save/load JPEG) ──
       let inputData: Float32Array;
       try {
-        inputData = await decodeImageToFloat32(modelInput.uri);
+        inputData = await decodeImageToFloat32(rawUri, lb);
       } catch (err) {
-        console.error('[3] Decode lỗi:', err);
+        console.error('[3] Skia Preprocess lỗi:', err);
         throw err;
       }
-      console.log(`[3] Decode xong — ${Date.now() - t2}ms`);
+      const t_skia = Date.now() - t2;
+      console.log(`[3] Skia Preprocess xong — ${t_skia}ms`);
 
       const t3 = Date.now();
       // ── Bước 4: Chạy YOLO inference ──
@@ -393,7 +393,7 @@ export default function ScanPlateScreen() {
       // ── Cập nhật state & mở modal ──
       setPerf({
         capture: t_capture,
-        preprocess: t_preprocess,
+        preprocess: t_preprocess + t_skia,
         inference: t_inference,
         crop: t_crop,
         ocr: t_ocr,
