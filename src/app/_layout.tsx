@@ -13,6 +13,7 @@ import { KeyboardProvider } from 'react-native-keyboard-controller'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 import { useShiftStore } from '@/shared/features/shift'
+import { TensorflowProvider } from '@/shared/providers/TensorflowProvider'
 import migrations from '../../drizzle/migrations.js'
 import './global.css'
 
@@ -98,15 +99,17 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <KeyboardProvider>
         <QueryClientProvider client={queryClient}>
-          <StatusBar style="dark" />
+          <TensorflowProvider>
+            <StatusBar style="dark" />
 
-          <ErrorBoundary 
-            FallbackComponent={ErrorFallback}
-            onReset={() => {
-            }}
-          >
-            <RootLayoutNav />
-          </ErrorBoundary>
+            <ErrorBoundary 
+              FallbackComponent={ErrorFallback}
+              onReset={() => {
+              }}
+            >
+              <RootLayoutNav />
+            </ErrorBoundary>
+          </TensorflowProvider>
         </QueryClientProvider>
       </KeyboardProvider>
     </SafeAreaProvider>

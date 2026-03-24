@@ -25,14 +25,13 @@ import {
   Dimensions,
   Image,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
-import { useTensorflowModel } from 'react-native-fast-tflite';
+import { useTensorflow } from '@/shared/providers/TensorflowProvider';
 import {
   Camera,
   useCameraDevice,
@@ -248,21 +247,17 @@ export default function ScanPlateScreen() {
 
   const btnScale = useRef(new Animated.Value(1)).current;
 
-  // ── Load model với GPU delegate (iOS: core-ml, Android: android-gpu) ──
-  const delegate = Platform.OS === 'ios' ? 'core-ml' : 'android-gpu';
-  const model = useTensorflowModel(
-    require('@/assets/models/best_int8.tflite'),
-    delegate,
-  );
+  // ── Dùng model từ Singleton Provider ──
+  const model = useTensorflow();
 
   useEffect(() => {
     if (model.state === 'loaded') {
-      console.log(`✅ [Model] Loaded với delegate: ${delegate}`);
+      console.log('✅ [Model] Singleton loaded & ready');
     }
     if (model.state === 'error') {
-      console.warn(`⚠️ [Model] GPU delegate lỗi, fallback CPU:`, model.error);
+      console.warn('⚠️ [Model] Singleton error:', (model as any).error);
     }
-  }, [model.state]);
+  }, [model.state, model]);
 
   useEffect(() => {
     if (!hasPermission) requestPermission();
