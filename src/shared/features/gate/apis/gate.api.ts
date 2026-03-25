@@ -1,6 +1,7 @@
 import { db } from '@/shared/db';
 import * as schema from '@/shared/db/schemas';
 import { and, desc, eq, isNull, like, sql } from 'drizzle-orm';
+import { ensurePermanentImage } from '@/shared/utils/file.utils';
 import { DEFAULT_RENEWAL_MONTHS } from '../const';
 import { TSearchVehicleType, TVehicleType } from '../types/gate.types';
 
@@ -219,13 +220,17 @@ export const checkIn = async (params: CheckInParams) => {
     });
   }
 
+  // Ensure images are stored permanently
+  const photoIn1 = await ensurePermanentImage(params.photoIn1);
+  const photoIn2 = await ensurePermanentImage(params.photoIn2);
+
   return await db.insert(schema.parkingEntries).values({
     entryShiftId: params.entryShiftId,
     cardUid: (params.cardUid === 'undefined' ? null : params.cardUid) || null,
     vehicleType: params.vehicleType,
     plateText: params.plateText,
-    photoIn1: params.photoIn1,
-    photoIn2: params.photoIn2,
+    photoIn1,
+    photoIn2,
     entryTime: new Date(),
     status: 'IN',
     manualInputIn: !params.cardUid || params.cardUid === 'undefined',
@@ -292,14 +297,18 @@ export const checkOut = async (params: CheckOutParams) => {
       .where(eq(schema.nfcCards.uid, params.cardUid));
   }
 
+  // Ensure images are stored permanently
+  const photoOut1 = await ensurePermanentImage(params.photoOut1);
+  const photoOut2 = await ensurePermanentImage(params.photoOut2);
+
   // 2. Update parking entry
   return await db.update(schema.parkingEntries)
     .set({
       exitTime: new Date(),
       exitShiftId: params.shiftId,
       exitPlate: params.exitPlate,
-      photoOut1: params.photoOut1,
-      photoOut2: params.photoOut2,
+      photoOut1,
+      photoOut2,
       plateMatch: params.plateMatch,
       feeAmount: params.feeAmount,
       paymentMethod: params.paymentMethod,
