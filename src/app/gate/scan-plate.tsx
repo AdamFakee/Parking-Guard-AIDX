@@ -17,7 +17,7 @@ import {
 
 // Internal Store & Utils
 import { useScanPlateStore } from '@/shared/features/gate/store/scan-plate.store';
-import { BBox } from '@/shared/features/gate/types/scan-plate.types';
+import { BBox, TScanPlateResultParams } from '@/shared/features/gate/types';
 import { checkLegitPlate, mlKitResultToOcrLines, processOcrResult } from '@/shared/features/gate/utils';
 import {
   calcLetterbox,
@@ -36,7 +36,7 @@ import {
   CameraOverlay,
   ErrorModal,
   ErrorModalRef
-} from '@/shared/features/gate/components';
+} from '@/shared/features/gate';
 
 /**
  * Màn hình nhận diện biển số xe (License Plate Recognition)
@@ -56,12 +56,27 @@ export default function ScanPlateScreen() {
 
   const { 
     setDetectedPlate, setConfidence, setIsCorrected, setIsCapturing, 
-    setCapturedFull, setCapturedCrop, reset 
+    setCapturedFull, setCapturedCrop
   } = useScanPlateStore();
 
   useEffect(() => { 
     if (!hasPermission) requestPermission(); 
   }, [hasPermission, requestPermission]);
+
+  const handleConfirm = useCallback(() => {
+    const { detectedPlate, capturedFull, capturedCrop } = useScanPlateStore.getState();
+
+    const results: TScanPlateResultParams = {
+      plate: detectedPlate,
+      fullImage: capturedFull || '',
+      plateImage: capturedCrop || '',
+      tagUid: (tagUid && tagUid !== 'undefined') ? tagUid : undefined
+    };
+
+    const params = new URLSearchParams(results as any);
+    const path = mode === 'out' ? '/gate/check-out' : '/gate/check-in';
+    router.push(`${path}?${params.toString()}` as any);
+  }, [mode, tagUid, router]);
 
   const handleCapture = async () => {
     const state = useScanPlateStore.getState();
@@ -106,7 +121,7 @@ export default function ScanPlateScreen() {
         const rect = getCropRect(box, lb, photo.width, photo.height);
         const res = await ImageManipulator.manipulateAsync(rawUri, [{ crop: rect }], { format: ImageManipulator.SaveFormat.JPEG });
         cropUri = res.uri.startsWith('file://') ? res.uri : `file://${res.uri}`;
-        setCapturedCrop(cropUri); // Cập nhật ảnh crop ngay
+        setCapturedCrop(cropUri); 
         targetUri = cropUri;
         targetH = rect.height;
       }
@@ -122,11 +137,12 @@ export default function ScanPlateScreen() {
         setConfidence(confidence);
         setIsCorrected(corrected);
 
-        if (!checkLegitPlate(text)) {
+        if (checkLegitPlate(text)) {
+          handleConfirm();
+        } else {
           modalRef.current?.open();
         }
       } else {
-        // TRƯỜNG HỢP CHỤP KHÔNG KHÍ: Đã có ảnh gốc từ bước 1, chỉ cần báo lỗi
         setDetectedPlate('');
         modalRef.current?.open();
       }
@@ -136,14 +152,6 @@ export default function ScanPlateScreen() {
       setIsCapturing(false);
     }
   };
-
-  const handleConfirm = useCallback(() => {
-    const { detectedPlate } = useScanPlateStore.getState();
-    const params = new URLSearchParams({ plate: detectedPlate });
-    if (tagUid && tagUid !== 'undefined') params.append('tagUid', tagUid);
-    const path = mode === 'out' ? '/gate/check-out' : '/gate/check-in';
-    router.replace(`${path}?${params.toString()}` as any);
-  }, [mode, tagUid, router]);
 
   if (!hasPermission || !device) {
     return (
@@ -168,7 +176,10 @@ export default function ScanPlateScreen() {
         <CameraOverlay />
         <ActionPanel onCapture={handleCapture} onConfirm={handleConfirm} />
       </View>
-      <ErrorModal ref={modalRef} />
+      <ErrorModal 
+        ref={modalRef} 
+        onConfirm={handleConfirm} 
+      />
     </View>
   );
 }

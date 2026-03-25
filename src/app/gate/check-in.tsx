@@ -2,7 +2,7 @@ import { AppHeader, Button } from '@/shared/components/ui';
 import { CheckInPhotoPreview, CheckInStatusCards, EditPlateModal, ExpiredMonthlyCardModal, ExpiredMonthlyCardModalRef, VehicleSelector } from '@/shared/features/gate';
 import { checkNfcCardUsage } from '@/shared/features/gate/apis/gate.api';
 import { useCheckIn } from '@/shared/features/gate/hooks';
-import { TVehicleType } from '@/shared/features/gate/types';
+import { TVehicleType, TScanPlateResultParams } from '@/shared/features/gate/types';
 import { useShiftStore } from '@/shared/features/shift';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { CheckCircle, Info } from 'lucide-react-native';
@@ -11,7 +11,7 @@ import { Alert, ScrollView, Text, View } from 'react-native';
 
 export default function CheckInScreen() {
   const router = useRouter();
-  const { tagUid, image, plate } = useLocalSearchParams<{ tagUid: string, image: string, plate: string }>();
+  const { tagUid, fullImage, plateImage, plate } = useLocalSearchParams<TScanPlateResultParams>();
   const { currentShift } = useShiftStore();
   const { mutate: performCheckIn, isPending } = useCheckIn();
   
@@ -70,8 +70,8 @@ export default function CheckInScreen() {
       cardUid: tagUid,
       vehicleType,
       plateText,
-      photoIn1: image,
-      photoIn2: image,
+      photoIn1: fullImage || '',
+      photoIn2: plateImage || fullImage || '',
     }, {
       onSuccess: () => {
         router.dismissAll();
@@ -100,7 +100,11 @@ export default function CheckInScreen() {
           </View>
         )}
 
-        <CheckInPhotoPreview image={image} plateText={plateText} />
+        <CheckInPhotoPreview 
+          fullImage={fullImage || ''} 
+          plateImage={plateImage || ''}
+          plateText={plateText} 
+        />
 
         <CheckInStatusCards 
           plateText={plateText} 

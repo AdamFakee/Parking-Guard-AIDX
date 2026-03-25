@@ -14,3 +14,10 @@ export type TPricingResult = {
   surcharge: number;
   total: number;
 };
+
+export type TScanPlateResultParams = {
+  tagUid?: string;
+  plate: string;
+  fullImage: string;
+  plateImage: string;
+};

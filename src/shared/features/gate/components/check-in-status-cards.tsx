@@ -5,7 +5,7 @@ import { Text, View } from 'react-native';
 
 interface CheckInStatusCardsProps {
   plateText: string;
-  tagUid: string;
+  tagUid?: string;
   onEditPlatePress: () => void;
   isMonthly?: boolean;
 }

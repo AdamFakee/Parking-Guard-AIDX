@@ -9,4 +9,6 @@ export * from './qr-payment-content';
 export * from './qr-payment-modal';
 export * from './search-active-entry-modal';
 export * from './system-config-modal';
+export * from './edit-plate-modal';
+export * from './vehicle-selector';
 

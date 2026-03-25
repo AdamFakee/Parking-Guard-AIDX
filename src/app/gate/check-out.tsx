@@ -1,9 +1,9 @@
 import { AppHeader, Button } from '@/shared/components/ui';
 import { COLORS, SHADOW } from '@/shared/constants/color.const';
-import { checkoutSchema, QRPaymentModal, QRPaymentModalRef, TCheckoutForm, TParkingEntry, useCheckOut, usePricingRules, useSystemConfig } from '@/shared/features/gate';
+import { checkoutSchema, QRPaymentModal, QRPaymentModalRef, TCheckoutForm, TParkingEntry, TScanPlateResultParams, useCheckOut, usePricingRules, useSystemConfig } from '@/shared/features/gate';
 import { checkNfcCardUsage, getActiveEntryByCard } from '@/shared/features/gate/apis/gate.api';
 import { SearchActiveEntryModal, SearchActiveEntryModalRef } from '@/shared/features/gate/components/search-active-entry-modal';
-import { calculateParkingPricing, checkPlateMatch } from '@/shared/features/gate/utils';
+import { calculateParkingPricing, checkPlateMatch, formatDisplayPlate } from '@/shared/features/gate/utils';
 import { useShiftStore } from '@/shared/features/shift';
 import { valibotResolver } from '@hookform/resolvers/valibot';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -14,7 +14,7 @@ import { ActivityIndicator, Alert, Image, Pressable, ScrollView, Text, TextInput
 
 export default function CheckOutScreen() {
   const router = useRouter();
-  const { tagUid, image: outImage, plate: outPlate } = useLocalSearchParams<{ tagUid: string, image: string, plate: string }>();
+  const { tagUid, fullImage: outFullImage, plateImage: outPlateImage, plate: outPlate } = useLocalSearchParams<TScanPlateResultParams>();
   
   const [loading, setLoading] = useState(true);
   const [entry, setEntry] = useState<TParkingEntry | null>(null);
@@ -137,8 +137,8 @@ export default function CheckOutScreen() {
         shiftId: currentShift.id,
         cardUid: tagUid && tagUid !== 'undefined' ? tagUid : entry.cardUid,
         exitPlate: outPlate || entry.plateText,
-        photoOut1: outImage || '',
-        photoOut2: outImage || '',
+        photoOut1: outFullImage || '',
+        photoOut2: outPlateImage || outFullImage || '',
         feeAmount: pricing.total,
         paymentMethod,
         isLostCard: data.checkoutType === 'lost',
@@ -267,8 +267,15 @@ export default function CheckOutScreen() {
               <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Hình ảnh vào</Text>
               <View className="w-full aspect-[4/3] bg-slate-100 rounded-lg overflow-hidden border border-slate-200">
                 <Image source={{ uri: entry.photoIn1 }} className="w-full h-full" resizeMode="cover" />
+                {entry.photoIn2 && entry.photoIn2 !== entry.photoIn1 && (
+                  <View className="absolute bottom-1 left-1 w-1/3 aspect-[3/1] border border-white rounded overflow-hidden">
+                    <Image source={{ uri: entry.photoIn2 }} className="w-full h-full" resizeMode="contain" />
+                  </View>
+                )}
               </View>
-              <Text className="text-sm font-black text-[#1E293B] mt-2">{entry.plateText}</Text>
+              <View className="flex-row items-center justify-between mt-2">
+                <Text className="text-sm font-black text-[#1E293B]">{formatDisplayPlate(entry.plateText)}</Text>
+              </View>
             </View>
             
             <View className="px-4 items-center justify-center">
@@ -289,9 +296,16 @@ export default function CheckOutScreen() {
             <View className="flex-1 items-end">
               <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Hình ảnh ra</Text>
               <View className="w-full aspect-[4/3] bg-slate-100 rounded-lg overflow-hidden border border-slate-200">
-                <Image source={{ uri: outImage }} className="w-full h-full" resizeMode="cover" />
+                <Image source={{ uri: outFullImage }} className="w-full h-full" resizeMode="cover" />
+                {outPlateImage && (
+                  <View className="absolute bottom-1 right-1 w-1/3 aspect-[3/1] border border-white rounded overflow-hidden">
+                    <Image source={{ uri: outPlateImage }} className="w-full h-full" resizeMode="contain" />
+                  </View>
+                )}
               </View>
-              <Text className="text-sm font-black text-[#1E293B] mt-2">{outPlate || '---'}</Text>
+              <View className="flex-row items-center justify-between mt-2 w-full">
+                <Text className="text-sm font-black text-[#1E293B]">{formatDisplayPlate(outPlate) || '---'}</Text>
+              </View>
             </View>
           </View>
         </View>
