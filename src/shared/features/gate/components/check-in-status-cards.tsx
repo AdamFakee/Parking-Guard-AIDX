@@ -47,10 +47,16 @@ export const CheckInStatusCards = ({ plateText, tagUid, onEditPlatePress, isMont
         <View>
           <Text style={{ fontSize: 12, color: '#2563eb', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 1 }}>Thẻ NFC</Text>
           <Text style={{ fontWeight: 'bold', fontSize: 18, color: '#1e293b', marginTop: 2 }}>
-            {tagUid && tagUid !== 'undefined' ? `UID: ${tagUid}` : 'Không sử dụng thẻ'} 
-            <Text style={{ fontSize: 14, fontWeight: 'normal', color: '#64748b' }}>
-              ({isMonthly ? 'Thẻ tháng' : 'Thẻ lượt'})
-            </Text>
+            {tagUid && tagUid !== 'undefined' ? (
+              <>
+                UID: {tagUid}
+                <Text style={{ fontSize: 14, fontWeight: 'normal', color: '#64748b' }}>
+                  {' '}({isMonthly ? 'Thẻ tháng' : 'Thẻ lượt'})
+                </Text>
+              </>
+            ) : (
+              'Không sử dụng thẻ'
+            )}
           </Text>
         </View>
       </OptionCard>
