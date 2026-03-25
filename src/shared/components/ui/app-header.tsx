@@ -149,7 +149,7 @@ export const AppHeader = ({
       className="w-full flex-row items-center justify-between px-6"
     >
       {/* Left Section: Back Button */}
-      <View className="w-10 items-start justify-center">
+      <View className="min-w-[40px] items-start justify-center">
         {showLeftButton && (
           <Pressable
             onPress={handleLeftPress}
@@ -178,12 +178,12 @@ export const AppHeader = ({
       </View>
  
       {/* Right Section: Action Icon */}
-      <View className="w-10 items-end justify-center">
+      <View className="min-w-[40px] items-end justify-center">
         {rightIcon && (
           <Pressable
             onPress={onRightPress}
             hitSlop={12}
-            className="size-10 items-center justify-center -mr-2 rounded-full active:bg-slate-100/50"
+            className="min-h-[40px] min-w-[40px] px-2 items-center justify-center -mr-2 rounded-full active:bg-slate-100/50"
             style={({ pressed }) => ({
               transform: [{ scale: pressed ? 0.92 : 1 }],
               opacity: pressed ? 0.8 : 1,

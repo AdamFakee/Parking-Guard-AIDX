@@ -1,6 +1,6 @@
 import { AppHeader, Button } from '@/shared/components/ui';
 import { COLORS, SHADOW } from '@/shared/constants/color.const';
-import { checkoutSchema, QRPaymentModal, QRPaymentModalRef, TCheckoutForm, TParkingEntry, TScanPlateResultParams, useCheckOut, usePricingRules, useSystemConfig } from '@/shared/features/gate';
+import { checkoutSchema, PREDEFINED_REASONS, QRPaymentModal, QRPaymentModalRef, TCheckoutForm, TParkingEntry, TScanPlateResultParams, useCheckOut, usePricingRules, useSystemConfig } from '@/shared/features/gate';
 import { checkNfcCardUsage, getActiveEntryByCard } from '@/shared/features/gate/apis/gate.api';
 import { SearchActiveEntryModal, SearchActiveEntryModalRef } from '@/shared/features/gate/components/search-active-entry-modal';
 import { calculateParkingPricing, checkPlateMatch, formatDisplayPlate } from '@/shared/features/gate/utils';
@@ -11,6 +11,7 @@ import { AlertCircle, AlertTriangle, Calculator, CheckCircle2, Circle, Info, Mes
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { ActivityIndicator, Alert, Image, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+
 
 export default function CheckOutScreen() {
   const router = useRouter();
@@ -40,6 +41,7 @@ export default function CheckOutScreen() {
   });
 
   const checkoutType = watch('checkoutType');
+  const reason = watch('reason');
 
   const loadEntryByCard = useCallback(async (uid: string) => {
     setLoading(true);
@@ -120,6 +122,7 @@ export default function CheckOutScreen() {
   }, [entry, outPlate]);
 
   const isLostCard = checkoutType === 'lost';
+  const isReasonRequired = !plateMatch || isLostCard;
 
   const pricing = useMemo(() => {
     return calculateParkingPricing(entry, sysConfig, pricingRules, isLostCard, isMonthly);
@@ -216,7 +219,7 @@ export default function CheckOutScreen() {
     );
   }
 
-  const isFormValid = !!checkoutType;
+  const isFormValid = !!checkoutType && (!isReasonRequired || (!!reason && reason.trim().length > 0));
   const isTypeLocked = !!entry && (!tagUid || tagUid === 'undefined');
 
   return (
@@ -226,7 +229,7 @@ export default function CheckOutScreen() {
         variant="white"
         showBorderBottom={true}
         borderBottomColor={COLORS.slate[200]}
-        rightIcon={!tagUid || tagUid === 'undefined' ? <Text className="text-blue-500 font-bold">Sửa</Text> : null}
+        rightIcon={!tagUid || tagUid === 'undefined' ? <Text className="text-blue-500 font-bold">Tìm xe trong bãi</Text> : null}
         onRightPress={() => searchModalRef.current?.open(outPlate, false)}
       />
 
@@ -313,6 +316,56 @@ export default function CheckOutScreen() {
               )}
             </View>
           </View>
+
+          {/* Plate Mismatch Reason Input */}
+          {!plateMatch && (
+            <View className="mt-4 pt-4 border-t border-slate-100">
+              <View className="flex-row items-center mb-3">
+                <AlertCircle size={14} color={COLORS.brand.red} />
+                <Text className="text-[10px] font-bold text-red-500 uppercase ml-1">Lý do không khớp (Bắt buộc)</Text>
+              </View>
+
+              <View className="flex-row flex-wrap gap-2 mb-3">
+                {PREDEFINED_REASONS.map((r) => (
+                  <Pressable 
+                    key={r}
+                    onPress={() => setValue('reason', r)}
+                    className={`px-3 py-2 rounded-lg border ${reason === r ? 'bg-red-100 border-red-200' : 'bg-slate-50 border-slate-100'}`}
+                  >
+                    <Text className={`text-[12px] ${reason === r ? 'text-red-700 font-bold' : 'text-slate-600'}`}>{r}</Text>
+                  </Pressable>
+                ))}
+                <Pressable 
+                  onPress={() => {
+                    if (PREDEFINED_REASONS.includes(reason || '')) {
+                      setValue('reason', '');
+                    }
+                  }}
+                  className={`px-3 py-2 rounded-lg border ${reason !== '' && !PREDEFINED_REASONS.includes(reason || '') ? 'bg-red-100 border-red-200' : 'bg-slate-50 border-slate-100'}`}
+                >
+                  <Text className={`text-[12px] ${reason !== '' && !PREDEFINED_REASONS.includes(reason || '') ? 'text-red-700 font-bold' : 'text-slate-600'}`}>Lý do khác (Nhập tay)...</Text>
+                </Pressable>
+              </View>
+
+              {(!PREDEFINED_REASONS.includes(reason || '') || reason === '') && (
+                <Controller
+                  control={control}
+                  name="reason"
+                  render={({ field: { onChange, value } }) => (
+                    <TextInput
+                      value={value}
+                      onChangeText={onChange}
+                      placeholder="Mô tả lý do khác..."
+                      multiline
+                      numberOfLines={2}
+                      className="bg-red-50 border border-red-100 rounded-xl p-3 text-sm text-[#1E293B] min-h-[60px]"
+                      textAlignVertical="top"
+                    />
+                  )}
+                />
+              )}
+            </View>
+          )}
         </View>
 
         {/* Manual Checkout Options */}
@@ -346,7 +399,7 @@ export default function CheckOutScreen() {
               </Pressable>
             </View>
 
-            {checkoutType === 'lost' && (
+            {checkoutType === 'lost' && plateMatch && (
               <View className="mt-4">
                 <View className="flex-row items-center mb-2">
                   <MessageSquare size={14} color={COLORS.slate[400]} />
