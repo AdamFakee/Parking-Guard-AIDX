@@ -196,18 +196,21 @@ export default function CheckOutScreen() {
         <AlertCircle size={64} color={COLORS.brand.red} />
         <Text className="text-xl font-bold text-[#1E293B] mt-4">Không có dữ liệu xe</Text>
         <Text className="text-slate-500 text-center mt-2 mb-8 text-sm">Vui lòng quẹt thẻ lại hoặc tìm kiếm xe bằng biển số</Text>
-        {!tagUid && (
-          <Pressable 
+        <View className="w-full gap-3 mt-8">
+          <Button 
+            label="Tìm xe trong bãi"
             onPress={() => searchModalRef.current?.open(outPlate, false)}
-            className="bg-blue-500 px-8 py-3 rounded-xl"
-            style={SHADOW.bottom}
-          >
-            <Text className="text-white font-bold">Tìm xe bằng biển số</Text>
-          </Pressable>
-        )}
-        <Pressable onPress={() => router.back()} className="mt-4">
-          <Text className="text-slate-400 font-medium">Quay lại</Text>
-        </Pressable>
+            className="border-0 h-14 rounded-2xl"
+            textClassName="font-bold text-white"
+          />
+          <Button 
+            label="Quay lại"
+            variant="outline"
+            onPress={() => router.back()}
+            className="border-slate-200 h-14 rounded-2xl"
+            textClassName="text-slate-400 font-medium"
+          />
+        </View>
         <SearchActiveEntryModal ref={searchModalRef} onSelect={handleSelectEntry} />
       </View>
     );
@@ -262,50 +265,52 @@ export default function CheckOutScreen() {
           className="bg-white rounded-2xl p-5 mb-4 border border-[#F1F5F9]"
           style={[SHADOW.bottom, { elevation: 2 }]}
         >
-          <View className="flex-row items-center justify-between">
-            <View className="flex-1">
-              <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Hình ảnh vào</Text>
-              <View className="w-full aspect-[4/3] bg-slate-100 rounded-lg overflow-hidden border border-slate-200">
-                <Image source={{ uri: entry.photoIn1 }} className="w-full h-full" resizeMode="cover" />
-                {entry.photoIn2 && entry.photoIn2 !== entry.photoIn1 && (
-                  <View className="absolute bottom-1 left-1 w-1/3 aspect-[3/1] border border-white rounded overflow-hidden">
-                    <Image source={{ uri: entry.photoIn2 }} className="w-full h-full" resizeMode="contain" />
-                  </View>
-                )}
-              </View>
-              <View className="flex-row items-center justify-between mt-2">
-                <Text className="text-sm font-black text-[#1E293B]">{formatDisplayPlate(entry.plateText)}</Text>
-              </View>
+          {/* Hình ảnh vào */}
+          <View className="w-full">
+            <View className="flex-row items-center justify-between mb-2">
+              <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Hình ảnh vào</Text>
+              <Text className="text-sm font-black text-[#1E293B]">{formatDisplayPlate(entry.plateText)}</Text>
             </View>
-            
-            <View className="px-4 items-center justify-center">
-              <View 
-                className="px-2 py-1 rounded-full border mb-2"
-                style={{ 
-                  backgroundColor: plateMatch ? '#f0fdf4' : '#fef2f2', 
-                  borderColor: plateMatch ? '#bbf7d0' : '#fecaca' 
-                }}
-              >
-                <Text className="text-[10px] font-bold uppercase" style={{ color: plateMatch ? COLORS.brand.green : COLORS.brand.red }}>
-                  {plateMatch ? 'Khớp' : 'Lệch'}
-                </Text>
-              </View>
-              <View className="w-8 h-[1px] bg-slate-200" />
+            <View className="w-full aspect-[16/9] bg-slate-100 rounded-xl overflow-hidden border border-slate-200">
+              <Image source={{ uri: entry.photoIn1 }} className="w-full h-full" resizeMode="cover" />
+              {entry.photoIn2 && entry.photoIn2 !== entry.photoIn1 && (
+                <View className="absolute bottom-2 left-2 w-1/3 aspect-[3/1] border border-white rounded overflow-hidden">
+                  <Image source={{ uri: entry.photoIn2 }} className="w-full h-full" resizeMode="contain" />
+                </View>
+              )}
             </View>
+          </View>
 
-            <View className="flex-1 items-end">
-              <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Hình ảnh ra</Text>
-              <View className="w-full aspect-[4/3] bg-slate-100 rounded-lg overflow-hidden border border-slate-200">
-                <Image source={{ uri: outFullImage }} className="w-full h-full" resizeMode="cover" />
-                {outPlateImage && (
-                  <View className="absolute bottom-1 right-1 w-1/3 aspect-[3/1] border border-white rounded overflow-hidden">
-                    <Image source={{ uri: outPlateImage }} className="w-full h-full" resizeMode="contain" />
-                  </View>
-                )}
-              </View>
-              <View className="flex-row items-center justify-between mt-2 w-full">
-                <Text className="text-sm font-black text-[#1E293B]">{formatDisplayPlate(outPlate) || '---'}</Text>
-              </View>
+          {/* Divider with Match Status */}
+          <View className="flex-row items-center my-4">
+            <View className="flex-1 h-[1px] bg-slate-100" />
+            <View 
+              className="px-3 py-1.5 rounded-full border mx-4"
+              style={{ 
+                backgroundColor: plateMatch ? '#f0fdf4' : '#fef2f2', 
+                borderColor: plateMatch ? '#bbf7d0' : '#fecaca' 
+              }}
+            >
+              <Text className="text-[10px] font-bold uppercase" style={{ color: plateMatch ? COLORS.brand.green : COLORS.brand.red }}>
+                {plateMatch ? 'Biển số trùng khớp ✓' : 'Biển số không khớp ✗'}
+              </Text>
+            </View>
+            <View className="flex-1 h-[1px] bg-slate-100" />
+          </View>
+
+          {/* Hình ảnh ra */}
+          <View className="w-full">
+            <View className="flex-row items-center justify-between mb-2">
+              <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Hình ảnh ra</Text>
+              <Text className="text-sm font-black text-[#1E293B]">{formatDisplayPlate(outPlate) || '---'}</Text>
+            </View>
+            <View className="w-full aspect-[16/9] bg-slate-100 rounded-xl overflow-hidden border border-slate-200">
+              <Image source={{ uri: outFullImage }} className="w-full h-full" resizeMode="cover" />
+              {outPlateImage && (
+                <View className="absolute bottom-2 right-2 w-1/3 aspect-[3/1] border border-white rounded overflow-hidden">
+                  <Image source={{ uri: outPlateImage }} className="w-full h-full" resizeMode="contain" />
+                </View>
+              )}
             </View>
           </View>
         </View>
@@ -380,7 +385,7 @@ export default function CheckOutScreen() {
             
             <View className="flex-row justify-between mb-2">
               <Text className="text-sm text-slate-500">Mã thẻ</Text>
-              <Text className="text-sm font-bold text-[#1E293B]">{entry.cardUid || 'N/A'}</Text>
+              <Text className="text-sm font-bold text-[#1E293B]">{entry.cardUid || 'Không sử dụng thẻ'}</Text>
             </View>
             <View className="flex-row justify-between mb-2">
               <Text className="text-sm text-slate-500">Thời gian đỗ</Text>

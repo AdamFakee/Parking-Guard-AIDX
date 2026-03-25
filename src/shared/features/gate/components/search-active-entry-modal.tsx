@@ -3,9 +3,8 @@ import { Search, X } from 'lucide-react-native';
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, Modal, Pressable, Text, TextInput, View } from 'react-native';
 import { searchActiveEntries } from '../apis/gate.api';
-import { TParkingEntry, TSearchVehicleType } from '../types/gate.types';
-
-type ParkingEntry = TParkingEntry;
+import { VEHICLE_TYPE_LABELS } from '../const';
+import { TParkingEntry, TSearchVehicleType, TVehicleType } from '../types/gate.types';
 
 export interface SearchActiveEntryModalRef {
   open: (initialPlate?: string, onlyNoUid?: boolean) => void;
@@ -13,17 +12,15 @@ export interface SearchActiveEntryModalRef {
 }
 
 interface Props {
-  onSelect: (entry: ParkingEntry) => void;
+  onSelect: (entry: TParkingEntry) => void;
 }
 
 export const SearchActiveEntryModal = forwardRef<SearchActiveEntryModalRef, Props>(({ onSelect }, ref) => {
   const [isVisible, setIsVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [outPlate, setOutPlate] = useState('');
-  const [searchType, setSearchType] = useState<'out' | 'in'>('out');
   const [onlyNoUid, setOnlyNoUid] = useState(false);
   const [vehicleType, setVehicleType] = useState<TSearchVehicleType>('all');
-  const [entries, setEntries] = useState<ParkingEntry[]>([]);
+  const [entries, setEntries] = useState<TParkingEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   useImperativeHandle(ref, () => ({
@@ -31,14 +28,10 @@ export const SearchActiveEntryModal = forwardRef<SearchActiveEntryModalRef, Prop
       setIsVisible(true);
       setOnlyNoUid(onlyNoUidFlag);
       setVehicleType('all');
+      setSearchQuery(initialPlate || '');
       if (initialPlate) {
-        setOutPlate(initialPlate);
-        setSearchType('out');
-        setSearchQuery(initialPlate);
         handleSearch(initialPlate, onlyNoUidFlag, 'all');
       } else {
-        setSearchType('in');
-        setSearchQuery('');
         setEntries([]);
       }
     },
@@ -46,16 +39,15 @@ export const SearchActiveEntryModal = forwardRef<SearchActiveEntryModalRef, Prop
   }));
 
   const handleSearch = useCallback(async (query: string, filterNoUid?: boolean, vType?: TSearchVehicleType) => {
-    if (!query) {
+    if (!query || query.length < 2) {
       setEntries([]);
       return;
     }
+    
     setIsLoading(true);
     try {
       const results = await searchActiveEntries(query, filterNoUid ?? onlyNoUid, vType ?? vehicleType);
-      setEntries(results as ParkingEntry[]);
-
-      console.log(results.map(e => e.cardUid))
+      setEntries(results as TParkingEntry[]);
     } catch (error) {
       console.error('Search error:', error);
     } finally {
@@ -64,20 +56,18 @@ export const SearchActiveEntryModal = forwardRef<SearchActiveEntryModalRef, Prop
   }, [onlyNoUid, vehicleType]);
 
   useEffect(() => {
-    if (searchType === 'out') return;
-
     const timer = setTimeout(() => {
-      if (searchQuery) {
+      if (searchQuery && searchQuery.length >= 2) {
         handleSearch(searchQuery);
-      } else {
+      } else if (!searchQuery) {
         setEntries([]);
       }
-    }, 500);
+    }, 400);
 
     return () => clearTimeout(timer);
-  }, [searchQuery, searchType, handleSearch]);
+  }, [searchQuery, handleSearch]);
 
-  const renderItem = ({ item }: { item: ParkingEntry }) => (
+  const renderItem = ({ item }: { item: TParkingEntry }) => (
     <Pressable 
       onPress={() => {
         onSelect(item);
@@ -98,7 +88,7 @@ export const SearchActiveEntryModal = forwardRef<SearchActiveEntryModalRef, Prop
           Vào: {format(item.entryTime, 'HH:mm dd/MM/yyyy')}
         </Text>
         <Text className="text-[10px] text-slate-400 mt-1 uppercase">
-          {item.vehicleType === 'car' ? '🚗 Ô tô' : item.vehicleType === 'motorbike' ? '🏍️ Xe máy' : '🚲 Xe điện'}
+          Loại phương tiện: {VEHICLE_TYPE_LABELS[item.vehicleType as TVehicleType] || item.vehicleType}
         </Text>
       </View>
       <View className="bg-blue-50 px-2 py-1 rounded">
@@ -114,7 +104,7 @@ export const SearchActiveEntryModal = forwardRef<SearchActiveEntryModalRef, Prop
       transparent={false}
       onRequestClose={() => setIsVisible(false)}
     >
-      <View className="flex-1 bg-slate-50">
+      <View className="flex-1 bg-white">
         {/* Header */}
         <View className="pt-12 pb-4 px-4 bg-white border-b border-slate-100 flex-row items-center">
           <Pressable onPress={() => setIsVisible(false)} className="p-2 -ml-2">
@@ -123,71 +113,39 @@ export const SearchActiveEntryModal = forwardRef<SearchActiveEntryModalRef, Prop
           <Text className="flex-1 text-center text-lg font-bold text-slate-800 mr-8">Tìm xe trong bãi</Text>
         </View>
 
-        {/* Options */}
-        <View className="flex-row p-4 gap-2 bg-white">
-          <Pressable 
-            onPress={() => {
-              setSearchType('out');
-              setSearchQuery(outPlate);
-              handleSearch(outPlate);
-            }}
-            className={`flex-1 flex-row items-center justify-center py-3 px-2 rounded-xl border ${searchType === 'out' ? 'bg-blue-50 border-blue-200' : 'bg-slate-50 border-slate-200'}`}
-          >
-            <View className={`w-4 h-4 rounded-full border items-center justify-center mr-2 ${searchType === 'out' ? 'border-blue-500 bg-blue-500' : 'border-slate-300'}`}>
-              {searchType === 'out' && <View className="w-1.5 h-1.5 rounded-full bg-white" />}
-            </View>
-            <Text className={`text-xs font-bold ${searchType === 'out' ? 'text-blue-600' : 'text-slate-500'}`}>Biển số RA</Text>
-          </Pressable>
-          
-          <Pressable 
-            onPress={() => {
-              setSearchType('in');
-              setSearchQuery('');
-              setEntries([]);
-            }}
-            className={`flex-1 flex-row items-center justify-center py-3 px-2 rounded-xl border ${searchType === 'in' ? 'bg-blue-50 border-blue-200' : 'bg-slate-50 border-slate-200'}`}
-          >
-            <View className={`w-4 h-4 rounded-full border items-center justify-center mr-2 ${searchType === 'in' ? 'border-blue-500 bg-blue-500' : 'border-slate-300'}`}>
-              {searchType === 'in' && <View className="w-1.5 h-1.5 rounded-full bg-white" />}
-            </View>
-            <Text className={`text-xs font-bold ${searchType === 'in' ? 'text-blue-600' : 'text-slate-500'}`}>Biển số VÀO</Text>
-          </Pressable>
-        </View>
-
-        {/* Search Input / Display */}
-        <View className="px-4 pb-4 bg-white">
-          {searchType === 'out' ? (
-            <View className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-              <Text className="text-xs text-slate-400 mb-1">Nhận diện biển số ra:</Text>
-              <Text className="text-2xl font-black text-slate-800 tracking-wider font-mono">
-                {outPlate || 'CHƯA NHẬN DIỆN'}
+        {/* Search Input Section */}
+        <View className="px-4 py-4">
+          <View className="flex-row items-center bg-slate-50 rounded-2xl px-4 border border-slate-200 focus:border-blue-500">
+            <Search size={20} color={searchQuery ? "#3b82f6" : "#94a3b8"} />
+            <TextInput
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Nhập biển số để tìm kiếm..."
+              className="flex-1 ml-3 text-xl font-bold text-slate-800 h-14"
+              autoFocus
+              autoCapitalize="characters"
+              placeholderTextColor="#94a3b8"
+            />
+            {searchQuery.length > 0 && (
+              <Pressable onPress={() => setSearchQuery('')} className="p-2">
+                <X size={20} color="#94a3b8" />
+              </Pressable>
+            )}
+          </View>
+          <View className="mt-2 ml-1">
+            <Text className="text-[10px] text-slate-400">
+              * Định dạng: 2 số tỉnh + 1-2 chữ + 3-5 số (VD: 51A12345, 59G11234)
+            </Text>
+            {onlyNoUid && (
+              <Text className="text-[10px] text-amber-600 font-bold uppercase mt-1">
+                * Đang tìm trong danh sách XE KHÔNG THẺ
               </Text>
-              {!outPlate && (
-                <Text className="text-[10px] text-red-500 mt-1 italic">* Không tìm thấy biển số từ camera ra</Text>
-              )}
-            </View>
-          ) : (
-            <View className="flex-row items-center bg-slate-100 rounded-xl px-4 py-2 border border-blue-200">
-              <Search size={20} color="#3b82f6" />
-              <TextInput
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                placeholder="Nhập biển số vào..."
-                className="flex-1 ml-2 text-xl font-bold text-slate-800 h-12"
-                autoFocus
-                autoCapitalize="characters"
-              />
-              {searchQuery.length > 0 && (
-                <Pressable onPress={() => setSearchQuery('')}>
-                  <X size={20} color="#94a3b8" />
-                </Pressable>
-              )}
-            </View>
-          )}
+            )}
+          </View>
         </View>
 
         {/* Vehicle Type Filter */}
-        <View className="flex-row px-4 pb-4 bg-white gap-2">
+        <View className="flex-row px-4 pb-4 gap-2">
            {[
              { id: 'all', label: 'Tất cả' },
              { id: 'motorbike', label: 'Xe máy' },
@@ -200,7 +158,7 @@ export const SearchActiveEntryModal = forwardRef<SearchActiveEntryModalRef, Prop
                  setVehicleType(item.id as any);
                  if (searchQuery) handleSearch(searchQuery, onlyNoUid, item.id as any);
                }}
-               className={`flex-1 py-2 rounded-lg border items-center justify-center ${vehicleType === item.id ? 'bg-[#eff6ff] border-blue-500' : 'bg-[#F8FAFC] border-slate-200'}`}
+               className={`flex-1 py-2 rounded-xl border items-center justify-center ${vehicleType === item.id ? 'bg-[#eff6ff] border-blue-500' : 'bg-[#F8FAFC] border-slate-200'}`}
              >
                <Text className={`text-[11px] font-bold ${vehicleType === item.id ? 'text-blue-600' : 'text-slate-500'}`}>{item.label}</Text>
              </Pressable>
@@ -211,21 +169,32 @@ export const SearchActiveEntryModal = forwardRef<SearchActiveEntryModalRef, Prop
         {isLoading ? (
           <View className="flex-1 items-center justify-center bg-white">
             <ActivityIndicator size="large" color="#3b82f6" />
+            <Text className="mt-4 text-slate-400 text-xs">Đang tìm kiếm...</Text>
           </View>
         ) : (
           <FlatList
             data={entries}
             keyExtractor={(item) => item.id}
             renderItem={renderItem}
-            className="flex-1 bg-white"
+            className="flex-1"
             contentContainerStyle={{ paddingBottom: 24 }}
             ListEmptyComponent={
               <View className="items-center justify-center p-12">
-                <Text className="text-slate-400 text-center text-sm">
-                  {searchQuery 
-                    ? `Không tìm thấy xe ${onlyNoUid ? 'không thẻ ' : ''}đang trong bãi khớp với biển số này` 
-                    : (searchType === 'in' ? 'Vui lòng nhập biển số để tìm kiếm' : 'Không có dữ liệu nhận diện')}
-                </Text>
+                {searchQuery.length >= 2 ? (
+                  <>
+                    <View className="w-16 h-16 bg-slate-50 rounded-full items-center justify-center mb-4">
+                      <Search size={32} color="#cbd5e1" />
+                    </View>
+                    <Text className="text-slate-500 font-bold text-center">Không tìm thấy xe phù hợp</Text>
+                    <Text className="text-slate-400 text-center text-xs mt-1">
+                      Thử nhập biển số khác hoặc kiểm tra lại bộ lọc
+                    </Text>
+                  </>
+                ) : (
+                  <Text className="text-slate-400 text-center text-sm italic">
+                    Vui lòng nhập ít nhất 2 ký tự để tìm kiếm
+                  </Text>
+                )}
               </View>
             }
           />
