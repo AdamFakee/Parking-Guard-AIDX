@@ -12,4 +12,8 @@ export * from './qr-payment-modal';
 export * from './search-active-entry-modal';
 export * from './system-config-modal';
 export * from './vehicle-selector';
+export * from './checkout/monthly-info-banner';
+export * from './checkout/vehicle-image-comparison';
+export * from './checkout/pricing-breakdown';
+export * from './checkout/checkout-footer';
 

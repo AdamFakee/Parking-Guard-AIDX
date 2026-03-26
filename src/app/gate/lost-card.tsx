@@ -1,28 +1,33 @@
-import { AppHeader, Button } from '@/shared/components/ui';
-import { COLORS, SHADOW } from '@/shared/constants/color.const';
-import {
-  calculateParkingPricing,
-  checkoutSchema,
-  formatDisplayPlate,
-  LOST_CARD_REASONS,
-  QRPaymentModal,
-  QRPaymentModalRef,
-  TCheckoutForm,
-  TParkingEntry,
-  TScanPlateResultParams,
-  useCheckOut,
-  usePricingRules,
-  useSystemConfig,
-  VehicleSearch
+import { AppHeader } from '@/shared/components/ui';
+import { COLORS } from '@/shared/constants/color.const';
+import { 
+  calculateParkingPricing, 
+  checkPlateMatch,
+  checkoutSchema, 
+  CheckoutFooter, 
+  formatDisplayPlate, 
+  LOST_CARD_REASONS, 
+  MonthlyInfoBanner, 
+  PricingBreakdown, 
+  QRPaymentModal, 
+  QRPaymentModalRef, 
+  TCheckoutForm, 
+  TParkingEntry, 
+  TScanPlateResultParams, 
+  useCheckOut, 
+  usePricingRules, 
+  useSystemConfig, 
+  VehicleImageComparison, 
+  VehicleSearch 
 } from '@/shared/features/gate';
 import { checkNfcCardUsage, getEntryById } from '@/shared/features/gate/apis/gate.api';
 import { useShiftStore } from '@/shared/features/shift';
 import { valibotResolver } from '@hookform/resolvers/valibot';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Calculator, CheckCircle2, Info, MessageSquare, Search, Wallet } from 'lucide-react-native';
+import { MessageSquare as MessageSquareIcon } from 'lucide-react-native';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { Alert, Image, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 export default function LostCardScreen() {
   const router = useRouter();
@@ -77,6 +82,10 @@ export default function LostCardScreen() {
     if (entry) checkCardType();
   }, [entry]);
 
+  const plateMatch = useMemo(() => {
+    return checkPlateMatch(entry?.plateText, initialPlate);
+  }, [entry, initialPlate]);
+
   const pricing = useMemo(() => {
     return calculateParkingPricing(entry, sysConfig, pricingRules, true, isMonthly);
   }, [entry, sysConfig, pricingRules, isMonthly]);
@@ -99,7 +108,7 @@ export default function LostCardScreen() {
         paymentMethod,
         isLostCard: true,
         lostCardReason: data.reason,
-        plateMatch: false 
+        plateMatch
       }, {
         onSuccess: () => {
           Alert.alert("Thành công", `Đã lưu lượt xe ra MẤT THẺ (${pricing.total.toLocaleString()}đ)`, [
@@ -154,139 +163,87 @@ export default function LostCardScreen() {
               </Pressable>
             </View>
 
-            {monthlyInfo && (
-              <View className={`p-3 rounded-xl mb-4 flex-row items-center border ${isMonthly ? 'bg-blue-50 border-blue-100' : 'bg-red-50 border-red-100'}`}>
-                <Info size={20} color={isMonthly ? '#3b82f6' : '#ef4444'} />
-                <View className="ml-2">
-                  <Text className={`font-bold ${isMonthly ? 'text-blue-700' : 'text-red-700'}`}>
-                    Thẻ tháng: {monthlyInfo.customerName} {isMonthly ? '' : '(HẾT HẠN)'}
-                  </Text>
-                </View>
-              </View>
-            )}
+            <MonthlyInfoBanner 
+              isMonthly={isMonthly}
+              customerName={monthlyInfo?.customerName}
+              isExpired={monthlyInfo?.isExpired}
+            />
 
             {/* Comparison Images */}
-            <View className="bg-white rounded-2xl p-4 mb-4 border border-slate-100" style={SHADOW.bottom}>
-              <View className="flex-row gap-2">
-                <View className="flex-1">
-                  <Text className="text-[10px] font-bold text-slate-400 mb-1 uppercase">Ảnh vào</Text>
-                  <View className="aspect-square bg-slate-100 rounded-lg overflow-hidden">
-                    <Image source={{ uri: entry.photoIn1 }} className="w-full h-full" />
-                  </View>
+            <VehicleImageComparison
+              entryPlate={entry.plateText}
+              exitPlate={initialPlate || ''}
+              entryPhoto={entry.photoIn1}
+              entryPhoto2={entry.photoIn2}
+              exitPhoto={outFullImage || ''}
+              exitPhoto2={outPlateImage}
+              plateMatch={plateMatch}
+            >
+              {/* Reason Input - Required */}
+              <View className="mt-4 pt-4 border-t border-slate-100">
+                <View className="flex-row items-center mb-3">
+                  <MessageSquareIcon size={16} color={COLORS.brand.red} />
+                  <Text className="text-[12px] font-bold text-red-500 uppercase ml-2">Lý do/Ghi chú mất thẻ (Bắt buộc)</Text>
                 </View>
-                <View className="flex-1">
-                  <Text className="text-[10px] font-bold text-slate-400 mb-1 uppercase">Ảnh ra hiện tại</Text>
-                  <View className="aspect-square bg-slate-100 rounded-lg overflow-hidden">
-                    {outFullImage ? (
-                      <Image source={{ uri: outFullImage }} className="w-full h-full" />
-                    ) : (
-                      <View className="flex-1 items-center justify-center">
-                        <Search size={24} color="#cbd5e1" />
-                        <Text className="text-[8px] text-slate-400 mt-1">Không có ảnh</Text>
-                      </View>
-                    )}
-                  </View>
-                </View>
-              </View>
-            </View>
-
-            {/* Reason Input - Required */}
-            <View className="bg-white rounded-2xl p-4 mb-4 border border-slate-100" style={SHADOW.bottom}>
-              <View className="flex-row items-center mb-3">
-                <MessageSquare size={16} color={COLORS.brand.red} />
-                <Text className="text-[12px] font-bold text-red-500 uppercase ml-2">Lý do/Ghi chú mất thẻ (Bắt buộc)</Text>
-              </View>
-              
-              <View className="flex-row flex-wrap gap-2 mb-3">
-                {LOST_CARD_REASONS.map((r) => (
+                
+                <View className="flex-row flex-wrap gap-2 mb-3">
+                  {LOST_CARD_REASONS.map((r) => (
+                    <Pressable 
+                      key={r}
+                      onPress={() => setValue('reason', r)}
+                      className={`px-3 py-2 rounded-lg border ${reason === r ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-100'}`}
+                    >
+                      <Text className={`text-[12px] ${reason === r ? 'text-red-700 font-bold' : 'text-slate-600'}`}>{r}</Text>
+                    </Pressable>
+                  ))}
                   <Pressable 
-                    key={r}
-                    onPress={() => setValue('reason', r)}
-                    className={`px-3 py-2 rounded-lg border ${reason === r ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-100'}`}
+                      onPress={() => {
+                          if (LOST_CARD_REASONS.includes(reason || '')) {
+                              setValue('reason', '');
+                          }
+                      }}
+                      className={`px-3 py-2 rounded-lg border ${reason !== '' && !LOST_CARD_REASONS.includes(reason || '') ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-100'}`}
                   >
-                    <Text className={`text-[12px] ${reason === r ? 'text-red-700 font-bold' : 'text-slate-600'}`}>{r}</Text>
+                      <Text className={`text-[12px] ${reason !== '' && !LOST_CARD_REASONS.includes(reason || '') ? 'text-red-700 font-bold' : 'text-slate-600'}`}>Lý do khác...</Text>
                   </Pressable>
-                ))}
-                <Pressable 
-                    onPress={() => {
-                        if (LOST_CARD_REASONS.includes(reason || '')) {
-                            setValue('reason', '');
-                        }
-                    }}
-                    className={`px-3 py-2 rounded-lg border ${reason !== '' && !LOST_CARD_REASONS.includes(reason || '') ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-100'}`}
-                >
-                    <Text className={`text-[12px] ${reason !== '' && !LOST_CARD_REASONS.includes(reason || '') ? 'text-red-700 font-bold' : 'text-slate-600'}`}>Lý do khác...</Text>
-                </Pressable>
-              </View>
+                </View>
 
-              <Controller
-                control={control}
-                name="reason"
-                render={({ field: { onChange, value } }) => (
-                  <TextInput
-                    value={value}
-                    onChangeText={onChange}
-                    placeholder="Nhập chi tiết lý do mất thẻ..."
-                    multiline
-                    numberOfLines={3}
-                    className="bg-[#F8FAFC] border border-slate-200 rounded-xl p-3 text-sm text-[#1E293B] min-h-[80px]"
-                    textAlignVertical="top"
-                  />
-                )}
-              />
-            </View>
+                <Controller
+                  control={control}
+                  name="reason"
+                  render={({ field: { onChange, value } }) => (
+                    <TextInput
+                      value={value}
+                      onChangeText={onChange}
+                      placeholder="Nhập chi tiết lý do mất thẻ..."
+                      multiline
+                      numberOfLines={3}
+                      className="bg-[#F8FAFC] border border-slate-200 rounded-xl p-3 text-sm text-[#1E293B] min-h-[80px]"
+                      textAlignVertical="top"
+                    />
+                  )}
+                />
+              </View>
+            </VehicleImageComparison>
 
             {/* Pricing */}
-            <View className="bg-white rounded-2xl overflow-hidden border border-slate-100" style={SHADOW.bottom}>
-              <View className="p-4">
-                <View className="flex-row items-center mb-3">
-                  <Calculator size={16} color={COLORS.slate[500]} />
-                  <Text className="text-[12px] font-bold text-slate-400 uppercase ml-2">Chi tiết thanh toán</Text>
-                </View>
-                <View className="flex-row justify-between mb-1">
-                  <Text className="text-slate-500 text-xs">Tiền gửi xe ({pricing.duration})</Text>
-                  <Text className="text-xs font-bold">{pricing.fee.toLocaleString()}đ</Text>
-                </View>
-                <View className="flex-row justify-between">
-                  <Text className="text-red-500 text-xs font-bold">Phụ thu mất thẻ</Text>
-                  <Text className="text-xs font-bold text-red-500">+{pricing.surcharge.toLocaleString()}đ</Text>
-                </View>
-              </View>
-              <View className="bg-amber-50 p-4 items-center border-t border-amber-100">
-                <Text className="text-[24px] font-black text-amber-600 font-mono">
-                  {pricing.total.toLocaleString()}đ
-                </Text>
-              </View>
-            </View>
+            <PricingBreakdown 
+              cardUid={entry.cardUid}
+              pricing={pricing}
+              showSurcharge={true}
+            />
           </ScrollView>
 
           {/* Footer Actions */}
-          <View className="bg-white p-4 pb-10 border-t border-slate-100 absolute bottom-0 left-0 right-0 shadow-lg">
-            <View className="flex-row gap-3">
-              <Button 
-                disabled={!isFormValid || isPending}
-                loading={isPending}
-                onPress={handleSubmit((data) => onConfirmCheckout(data, 'cash'))}
-                label="TIỀN MẶT"
-                leftIcon={Wallet}
-                iconSize={20}
-                className={`flex-1 rounded-2xl h-14 border-0 ${!isFormValid || isPending ? 'bg-slate-200' : 'bg-green-500'}`}
-                textClassName={!isFormValid || isPending ? 'text-slate-400' : 'text-white font-black text-xs'}
-              />
-              <Button 
-                disabled={!isFormValid || isPending}
-                onPress={handleSubmit((data) => {
-                  setPendingFormData(data);
-                  qrModalRef.current?.open(pricing.total, entry.plateText);
-                })}
-                label="QR CHUYỂN KHOẢN"
-                leftIcon={CheckCircle2}
-                iconSize={20}
-                className={`flex-1 rounded-2xl h-14 border-0 ${!isFormValid || isPending ? 'bg-slate-200' : 'bg-violet-500'}`}
-                textClassName={!isFormValid || isPending ? 'text-slate-400' : 'text-white font-black text-xs'}
-              />
-            </View>
-          </View>
+          <CheckoutFooter 
+            isFormValid={isFormValid}
+            isPending={isPending}
+            onCashPress={handleSubmit((data) => onConfirmCheckout(data, 'cash'))}
+            onQRPress={handleSubmit((data) => {
+              setPendingFormData(data);
+              qrModalRef.current?.open(pricing.total, entry.plateText);
+            })}
+          />
         </View>
       )}
 

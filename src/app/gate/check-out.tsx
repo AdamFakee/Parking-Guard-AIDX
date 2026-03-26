@@ -1,16 +1,31 @@
 import { AppHeader, Button } from '@/shared/components/ui';
 import { COLORS, SHADOW } from '@/shared/constants/color.const';
-import { checkoutSchema, PREDEFINED_REASONS, QRPaymentModal, QRPaymentModalRef, TCheckoutForm, TParkingEntry, TScanPlateResultParams, useCheckOut, usePricingRules, useSystemConfig } from '@/shared/features/gate';
+import { 
+  checkoutSchema, 
+  CheckoutFooter, 
+  MonthlyInfoBanner, 
+  PricingBreakdown, 
+  PREDEFINED_REASONS, 
+  QRPaymentModal, 
+  QRPaymentModalRef, 
+  TCheckoutForm, 
+  TParkingEntry, 
+  TScanPlateResultParams, 
+  useCheckOut, 
+  usePricingRules, 
+  useSystemConfig, 
+  VehicleImageComparison 
+} from '@/shared/features/gate';
 import { checkNfcCardUsage, getActiveEntryByCard, searchActiveEntries } from '@/shared/features/gate/apis/gate.api';
 import { SearchActiveEntryModal, SearchActiveEntryModalRef } from '@/shared/features/gate/components/search-active-entry-modal';
-import { calculateParkingPricing, checkPlateMatch, formatDisplayPlate } from '@/shared/features/gate/utils';
+import { calculateParkingPricing, checkPlateMatch } from '@/shared/features/gate/utils';
 import { useShiftStore } from '@/shared/features/shift';
 import { valibotResolver } from '@hookform/resolvers/valibot';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { AlertCircle, AlertTriangle, Calculator, CheckCircle2, Circle, Info, Wallet } from 'lucide-react-native';
+import { AlertCircle, AlertTriangle, CheckCircle2, Circle } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { ActivityIndicator, Alert, Image, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 
 export default function CheckOutScreen() {
@@ -269,89 +284,22 @@ export default function CheckOutScreen() {
       />
 
       <ScrollView className="flex-1 p-4" contentContainerStyle={{ paddingBottom: 160 }}>
-        {monthlyInfo && (
-          <View 
-            style={{ 
-              backgroundColor: isMonthly ? '#eff6ff' : '#fef2f2', 
-              padding: 12, 
-              borderRadius: 12, 
-              marginBottom: 16, 
-              flexDirection: 'row', 
-              alignItems: 'center',
-              borderWidth: 1,
-              borderColor: isMonthly ? '#bfdbfe' : '#fecaca'
-            }}
-          >
-            {isMonthly ? (
-              <Info size={20} color="#3b82f6" style={{ marginRight: 8 }} />
-            ) : (
-              <AlertTriangle size={20} color="#ef4444" style={{ marginRight: 8 }} />
-            )}
-            <View>
-              <Text style={{ color: isMonthly ? '#1e40af' : '#b91c1c', fontWeight: 'bold' }}>
-                Thẻ tháng: {monthlyInfo?.customerName} {isMonthly ? '' : '(HẾT HẠN)'}
-              </Text>
-              <Text style={{ color: isMonthly ? '#1e40af' : '#b91c1c', fontSize: 12 }}>
-                {isMonthly ? 'Đã được miễn phí tiền gửi xe' : 'Hết hạn sử dụng - Tính tiền như vé lượt'}
-              </Text>
-            </View>
-          </View>
-        )}
+        <MonthlyInfoBanner 
+          isMonthly={isMonthly}
+          customerName={monthlyInfo?.customerName}
+          isExpired={monthlyInfo?.isExpired}
+        />
 
         {/* Plate Comparison */}
-        <View 
-          className="bg-white rounded-2xl p-5 mb-4 border border-[#F1F5F9]"
-          style={[SHADOW.bottom, { elevation: 2 }]}
+        <VehicleImageComparison
+          entryPlate={entry.plateText}
+          exitPlate={outPlate}
+          entryPhoto={entry.photoIn1}
+          entryPhoto2={entry.photoIn2}
+          exitPhoto={outFullImage}
+          exitPhoto2={outPlateImage}
+          plateMatch={plateMatch}
         >
-          {/* Hình ảnh vào */}
-          <View className="w-full">
-            <View className="flex-row items-center justify-between mb-2">
-              <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Hình ảnh vào</Text>
-              <Text className="text-sm font-black text-[#1E293B]">{formatDisplayPlate(entry.plateText)}</Text>
-            </View>
-            <View className="w-full aspect-[16/9] bg-slate-100 rounded-xl overflow-hidden border border-slate-200">
-              <Image source={{ uri: entry.photoIn1 }} className="w-full h-full" resizeMode="cover" />
-              {entry.photoIn2 && entry.photoIn2 !== entry.photoIn1 && (
-                <View className="absolute bottom-2 left-2 w-1/3 aspect-[3/1] border border-white rounded overflow-hidden">
-                  <Image source={{ uri: entry.photoIn2 }} className="w-full h-full" resizeMode="contain" />
-                </View>
-              )}
-            </View>
-          </View>
-
-          {/* Divider with Match Status */}
-          <View className="flex-row items-center my-4">
-            <View className="flex-1 h-[1px] bg-slate-100" />
-            <View 
-              className="px-3 py-1.5 rounded-full border mx-4"
-              style={{ 
-                backgroundColor: plateMatch ? '#f0fdf4' : '#fef2f2', 
-                borderColor: plateMatch ? '#bbf7d0' : '#fecaca' 
-              }}
-            >
-              <Text className="text-[10px] font-bold uppercase" style={{ color: plateMatch ? COLORS.brand.green : COLORS.brand.red }}>
-                {plateMatch ? 'Biển số trùng khớp ✓' : 'Biển số không khớp ✗'}
-              </Text>
-            </View>
-            <View className="flex-1 h-[1px] bg-slate-100" />
-          </View>
-
-          {/* Hình ảnh ra */}
-          <View className="w-full">
-            <View className="flex-row items-center justify-between mb-2">
-              <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Hình ảnh ra</Text>
-              <Text className="text-sm font-black text-[#1E293B]">{formatDisplayPlate(outPlate) || '---'}</Text>
-            </View>
-            <View className="w-full aspect-[16/9] bg-slate-100 rounded-xl overflow-hidden border border-slate-200">
-              <Image source={{ uri: outFullImage }} className="w-full h-full" resizeMode="cover" />
-              {outPlateImage && (
-                <View className="absolute bottom-2 right-2 w-1/3 aspect-[3/1] border border-white rounded overflow-hidden">
-                  <Image source={{ uri: outPlateImage }} className="w-full h-full" resizeMode="contain" />
-                </View>
-              )}
-            </View>
-          </View>
-
           {/* Plate Mismatch Reason Input */}
           {!plateMatch && (
             <View className="mt-4 pt-4 border-t border-slate-100">
@@ -401,7 +349,7 @@ export default function CheckOutScreen() {
               )}
             </View>
           )}
-        </View>
+        </VehicleImageComparison>
 
         {/* Manual Checkout Options */}
         {(!tagUid || tagUid === 'undefined') && (
@@ -458,69 +406,20 @@ export default function CheckOutScreen() {
         )}
 
         {/* Pricing Card */}
-        <View 
-          className="bg-white rounded-2xl overflow-hidden border border-[#F1F5F9]"
-          style={[SHADOW.bottom, { elevation: 2 }]}
-        >
-          <View className="p-5">
-            <View className="flex-row items-center mb-4">
-              <Calculator size={18} color={COLORS.slate[500]} />
-              <Text className="text-[12px] font-bold text-slate-400 uppercase tracking-widest ml-2">Thanh toán</Text>
-            </View>
-            
-            <View className="flex-row justify-between mb-2">
-              <Text className="text-sm text-slate-500">Mã thẻ</Text>
-              <Text className="text-sm font-bold text-[#1E293B]">{entry.cardUid || 'Không sử dụng thẻ'}</Text>
-            </View>
-            <View className="flex-row justify-between mb-2">
-              <Text className="text-sm text-slate-500">Thời gian đỗ</Text>
-              <Text className="text-sm font-bold text-[#1E293B]">{pricing.duration}</Text>
-            </View>
-            <View className="flex-row justify-between mb-2">
-              <Text className="text-sm text-slate-500">Tiền gửi xe</Text>
-              <Text className="text-sm font-bold text-[#1E293B]">{pricing.fee.toLocaleString()}đ</Text>
-            </View>
-            {/* Phụ thu mất thẻ đã được tách sang màn hình riêng */}
-          </View>
-          
-          <View className="bg-[#fff7ed] p-6 items-center justify-center border-t border-[#ffedd5]">
-            <Text className="text-[10px] font-black text-amber-500 uppercase tracking-[2px] mb-1">Tổng cộng</Text>
-            <Text className="text-[32px] font-black text-amber-500" style={{ fontFamily: 'monospace' }}>
-              {pricing.total.toLocaleString()}đ
-            </Text>
-          </View>
-        </View>
+        <PricingBreakdown 
+          cardUid={entry.cardUid}
+          pricing={pricing}
+          showSurcharge={false}
+        />
       </ScrollView>
 
       {/* Footer Actions */}
-      <View 
-        className="bg-white p-4 pb-10 border-t border-[#F1F5F9] absolute bottom-0 left-0 right-0"
-        style={SHADOW.up}
-      >
-        <Text className="text-center text-[10px] font-bold text-slate-400 mb-4 uppercase tracking-[1.5px]">Phương thức thanh toán</Text>
-        <View className="flex-row gap-3">
-          <Button 
-            disabled={!isFormValid || isPending}
-            loading={isPending}
-            onPress={handleSubmit((data) => onConfirmCheckout(data, 'cash'))}
-            label="TIỀN MẶT"
-            leftIcon={Wallet}
-            iconSize={20}
-            className={`flex-1 rounded-2xl h-14 border-0 ${!isFormValid || isPending ? 'bg-slate-200' : 'bg-green-500'}`}
-            textClassName="text-white font-black text-xs"
-          />
-          
-          <Button 
-            disabled={!isFormValid || isPending}
-            onPress={handleSubmit((data) => triggerQRPayment(data))}
-            label="CHUYỂN KHOẢN"
-            leftIcon={CheckCircle2}
-            iconSize={20}
-            className={`flex-1 rounded-2xl h-14 border-0 ${!isFormValid || isPending ? 'bg-slate-200' : 'bg-violet-500'}`}
-            textClassName="text-white font-black text-xs"
-          />
-        </View>
-      </View>
+      <CheckoutFooter 
+        isFormValid={isFormValid}
+        isPending={isPending}
+        onCashPress={handleSubmit((data) => onConfirmCheckout(data, 'cash'))}
+        onQRPress={handleSubmit((data) => triggerQRPayment(data))}
+      />
 
       <SearchActiveEntryModal ref={searchModalRef} onSelect={handleSelectEntry} />
       <QRPaymentModal ref={qrModalRef} onConfirm={handleQRConfirm} isPending={isPending} />
