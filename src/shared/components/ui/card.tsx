@@ -37,8 +37,8 @@ export const Card = ({
   return (
     <View
       className={cn(
-        'bg-app-surface px-md rounded-2xl',
-        'border border-slate-700',
+        'bg-white rounded-2xl',
+        'border border-slate-100',
         centered && 'items-center justify-center',
         className,
       )}

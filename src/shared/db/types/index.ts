@@ -7,6 +7,9 @@ export type SystemConfig = InferSelectModel<typeof schema.systemConfigs>;
 export type NfcCard = InferSelectModel<typeof schema.nfcCards>;
 export type PricingRule = InferSelectModel<typeof schema.pricingRules>;
 export type Shift = InferSelectModel<typeof schema.shifts>;
+export type ShiftWithStaff = Shift & {
+  staff: Staff | null;
+};
 export type ParkingEntry = InferSelectModel<typeof schema.parkingEntries>;
 export type LostCardReport = InferSelectModel<typeof schema.lostCardReports>;
 

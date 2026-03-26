@@ -62,10 +62,10 @@ export const GRADIENTS = {
 export const SHADOW = {
   bottom: {
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+    shadowRadius: 1,
+    elevation: 1,
   },
   up: {
     shadowColor: '#000000',
