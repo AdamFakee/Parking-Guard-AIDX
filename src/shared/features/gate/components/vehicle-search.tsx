@@ -1,10 +1,10 @@
 import { format } from 'date-fns';
 import { Search, X } from 'lucide-react-native';
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Image, Pressable, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from 'react-native';
+import { ParkingTransactionItem } from '../../reports/components';
 import { searchActiveEntries } from '../apis/gate.api';
-import { VEHICLE_TYPE_LABELS } from '../const';
-import { TParkingEntry, TSearchVehicleType, TVehicleType } from '../types/gate.types';
+import { TParkingEntry, TSearchVehicleType } from '../types/gate.types';
 
 interface Props {
   onSelect: (entry: TParkingEntry) => void;
@@ -55,24 +55,16 @@ export const VehicleSearch = ({
   }, [searchQuery, handleSearch]);
 
   const renderItem = ({ item }: { item: TParkingEntry }) => (
-    <Pressable 
-      onPress={() => onSelect(item)}
-      className="flex-row items-center p-4 border-b border-slate-100 bg-white active:bg-slate-50"
-    >
-      <View className="w-20 h-16 bg-slate-100 rounded-lg overflow-hidden border border-slate-200">
-        <Image source={{ uri: item.photoIn1 }} className="w-full h-full" resizeMode="cover" />
-      </View>
-      <View className="flex-1 ml-4">
-        <Text className="text-lg font-bold text-slate-800">{item.plateText}</Text>
-        <Text className="text-xs text-slate-500">Vào: {format(item.entryTime, 'HH:mm dd/MM/yyyy')}</Text>
-        <Text className="text-[10px] text-slate-400 mt-1 uppercase">
-          Loại phương tiện: {VEHICLE_TYPE_LABELS[item.vehicleType as TVehicleType] || item.vehicleType}
-        </Text>
-      </View>
-      <View className="bg-blue-50 px-2 py-1 rounded">
-        <Text className="text-blue-600 text-[10px] font-bold">CHỌN</Text>
-      </View>
-    </Pressable>
+    <ParkingTransactionItem 
+      item={item as any} 
+      onPress={(entry: any) => onSelect(entry as TParkingEntry)}
+      timeLabel={`Vào: ${format(item.entryTime, 'HH:mm dd/MM/yyyy')}`}
+      rightContent={
+        <View className="bg-blue-50 px-2 py-1 rounded">
+          <Text className="text-blue-600 text-[10px] font-bold">CHỌN</Text>
+        </View>
+      }
+    />
   );
 
   return (

@@ -35,7 +35,7 @@ export const ShiftListItem = ({ shift }: ShiftListItemProps) => {
               className={`ml-sm px-xs rounded ${shift.status === 'open' ? 'bg-green-500/20' : 'bg-slate-200'}`}
             >
               <Text className={`text-[10px] ${shift.status === 'open' ? 'text-green-500' : 'text-slate-400'}`}>
-                {shift.status === 'open' ? 'TRỰC' : 'ĐÓNG'}
+                {shift.status === 'open' ? 'ĐANG TRỰC' : 'ĐÃ ĐÓNG'}
               </Text>
             </View>
           </View>

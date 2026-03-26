@@ -1,10 +1,12 @@
-import { Card } from '@/shared/components/ui';
+import { ParkingEntry } from '@/shared/db';
 import { format } from 'date-fns';
+import { router } from 'expo-router';
 import React from 'react';
 import { Text, View } from 'react-native';
+import { ParkingTransactionItem } from './parking-transaction-item';
 
 interface ShiftDetailTransactionsProps {
-  list: any[];
+  list: ParkingEntry[];
   type: 'IN' | 'OUT';
 }
 
@@ -15,32 +17,36 @@ export const ShiftDetailTransactions = ({ list, type }: ShiftDetailTransactionsP
         <Text className="text-slate-600">Không có giao dịch nào</Text>
       </View>
     ) : (
-      list.map((item) => (
-        <View key={item.id} className="mb-sm">
-          <Card className="p-md" shadow>
-            <View className="flex-row justify-between items-start">
-              <View>
-                <Text className="text-slate-900 font-bold text-base">{item.plateText || item.exitPlate}</Text>
-                <Text className="text-slate-400 text-xs mt-xs">
-                  {format(new Date(type === 'IN' ? item.entryTime : item.exitTime), 'HH:mm:ss')}
-                </Text>
-              </View>
-              <View className="items-end">
-                <View className="px-sm py-px bg-slate-100 rounded">
-                  <Text className="text-slate-300 text-[10px] uppercase">
-                    {item.vehicleType === 'motorbike' ? 'Xe máy' : item.vehicleType === 'car' ? 'Ô tô' : 'Xe điện'}
-                  </Text>
+      list.map((item) => {
+        const plate = type === 'IN' ? item.plateText : (item.exitPlate || item.plateText);
+        const time = type === 'IN' ? item.entryTime : (item.exitTime || item.entryTime);
+        const image = type === 'IN' ? item.photoIn1 : (item.photoOut1 || item.photoIn1);
+
+        return (
+          <ParkingTransactionItem 
+            key={item.id}
+            item={item} 
+            plate={plate}
+            imageUri={image}
+            timeLabel={`${type === 'IN' ? 'Vào' : 'Ra'}: ${format(new Date(time), type === 'IN' ? 'HH:mm dd/MM/yyyy' : 'HH:mm:ss dd/MM/yyyy')}`}
+            onPress={() => router.push({ pathname: '/gate/entry-detail', params: { id: item.id } })}
+            rightContent={
+              type === 'OUT' ? (
+                <View className="items-end">
+                  <View className="bg-emerald-50 px-2 py-1 rounded">
+                    <Text className="text-emerald-600 text-[10px] font-bold">HOÀN TẤT</Text>
+                  </View>
+                  {item.feeAmount !== undefined && (
+                    <Text className="text-sm font-bold text-slate-900 mt-1">
+                      {(item.feeAmount || 0).toLocaleString('vi-VN')}đ
+                    </Text>
+                  )}
                 </View>
-                {type === 'OUT' && (
-                  <Text className="text-slate-900 font-bold mt-xs">
-                    {(item.feeAmount || 0).toLocaleString('vi-VN')}đ
-                  </Text>
-                )}
-              </View>
-            </View>
-          </Card>
-        </View>
-      ))
+              ) : null
+            }
+          />
+        );
+      })
     )}
   </View>
 );

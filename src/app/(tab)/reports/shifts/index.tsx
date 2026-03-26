@@ -1,6 +1,6 @@
 import { AppHeader } from '@/shared/components/ui';
-import { useShifts } from '@/shared/features/reports/hooks/use-shifts';
 import { ShiftListItem } from '@/shared/features/reports/components';
+import { useShifts } from '@/shared/features/reports/hooks/use-shifts';
 import React from 'react';
 import { FlatList, RefreshControl, Text, View } from 'react-native';
 
@@ -9,7 +9,7 @@ export default function ShiftHistoryScreen() {
 
   return (
     <View className="flex-1 bg-[#F8FAFC]">
-      <AppHeader title="Lịch sử ca" />
+      <AppHeader title="Lịch sử ca làm việc" />
       
       <FlatList
         data={shifts}
