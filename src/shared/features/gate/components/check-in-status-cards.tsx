@@ -23,7 +23,7 @@ export const CheckInStatusCards = ({ plateText, tagUid, onEditPlatePress, isMont
         rightIcon={
           <View style={{ backgroundColor: 'white', borderColor: '#bbf7d0', borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, flexDirection: 'row', alignItems: 'center' }}>
             <Edit2 size={14} color="#10b981" />
-            <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#16a34a', marginLeft: 4 }}>Tìm trong bãi</Text>
+            <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#16a34a', marginLeft: 4 }}>Sửa</Text>
           </View>
         }
         onPress={onEditPlatePress}

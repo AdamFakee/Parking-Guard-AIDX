@@ -15,3 +15,12 @@ export const PREDEFINED_REASONS = [
   'Sai số liệu từ lúc xe vào (Lỗi nhân viên)',
   'Biển số bị chói sáng / Quá tối',
 ];
+
+
+export const LOST_CARD_REASONS = [
+  'Khách làm mất thẻ trên đường',
+  'Làm rơi thẻ trong bãi xe',
+  'Thẻ bị gãy / Hỏng chip NFC',
+  'Khách để quên thẻ trên xe (Đã lấy hàng ra)',
+  'Thẻ không phản hồi (Lỗi kỹ thuật)',
+];

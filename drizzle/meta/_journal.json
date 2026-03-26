@@ -43,6 +43,13 @@
       "when": 1773825518809,
       "tag": "0005_daffy_vermin",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1774492296172,
+      "tag": "0006_grey_vapor",
+      "breakpoints": true
     }
   ]
 }

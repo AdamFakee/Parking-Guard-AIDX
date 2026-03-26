@@ -1,0 +1,1 @@
+ALTER TABLE `parking_entries` ADD `lost_card_reason` text;

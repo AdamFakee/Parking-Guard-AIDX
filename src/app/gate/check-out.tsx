@@ -1,13 +1,13 @@
 import { AppHeader, Button } from '@/shared/components/ui';
 import { COLORS, SHADOW } from '@/shared/constants/color.const';
 import { checkoutSchema, PREDEFINED_REASONS, QRPaymentModal, QRPaymentModalRef, TCheckoutForm, TParkingEntry, TScanPlateResultParams, useCheckOut, usePricingRules, useSystemConfig } from '@/shared/features/gate';
-import { checkNfcCardUsage, getActiveEntryByCard } from '@/shared/features/gate/apis/gate.api';
+import { checkNfcCardUsage, getActiveEntryByCard, searchActiveEntries } from '@/shared/features/gate/apis/gate.api';
 import { SearchActiveEntryModal, SearchActiveEntryModalRef } from '@/shared/features/gate/components/search-active-entry-modal';
 import { calculateParkingPricing, checkPlateMatch, formatDisplayPlate } from '@/shared/features/gate/utils';
 import { useShiftStore } from '@/shared/features/shift';
 import { valibotResolver } from '@hookform/resolvers/valibot';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { AlertCircle, AlertTriangle, Calculator, CheckCircle2, Circle, Info, MessageSquare, Wallet } from 'lucide-react-native';
+import { AlertCircle, AlertTriangle, Calculator, CheckCircle2, Circle, Info, Wallet } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { ActivityIndicator, Alert, Image, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
@@ -70,12 +70,46 @@ export default function CheckOutScreen() {
       setValue('checkoutType', 'normal');
     } else {
       setLoading(false);
-      const timer = setTimeout(() => {
-         searchModalRef.current?.open(outPlate, false);
-      }, 500);
-      return () => clearTimeout(timer);
+      
+      // Auto-search by plate if outPlate is available
+      if (outPlate) {
+        searchActiveEntries(outPlate).then(results => {
+          if (results.length === 1) {
+             const foundEntry = results[0] as TParkingEntry;
+             
+             // Nếu xe vào có thẻ nhưng ra không có thẻ => Luôn chuyển sang Mất thẻ
+             if (foundEntry.cardUid) {
+                router.push({
+                  pathname: '/gate/lost-card',
+                  params: { 
+                    plate: outPlate, 
+                    fullImage: outFullImage, 
+                    plateImage: outPlateImage,
+                    entryId: foundEntry.id
+                  }
+                });
+                return;
+             }
+
+             // Ngược lại (xe vào không thẻ, ra không thẻ) => Checkout ảo
+             setEntry(foundEntry);
+             setValue('checkoutType', 'virtual');
+          } else {
+             // No unique match, show search modal
+             searchModalRef.current?.open(outPlate, false);
+          }
+        }).catch(err => {
+          console.error('Auto search error:', err);
+          searchModalRef.current?.open(outPlate, false);
+        });
+      } else {
+        const timer = setTimeout(() => {
+           searchModalRef.current?.open(outPlate, false);
+        }, 500);
+        return () => clearTimeout(timer);
+      }
     }
-  }, [tagUid, outPlate, loadEntryByCard, setValue]);
+  }, [tagUid, outPlate, loadEntryByCard, setValue, outFullImage, outPlateImage, router]);
 
   useEffect(() => {
     async function checkCardType() {
@@ -107,13 +141,22 @@ export default function CheckOutScreen() {
   const handleSelectEntry = (selectedEntry: TParkingEntry) => {
     setEntry(selectedEntry);
     if (!tagUid || tagUid === 'undefined') {
-      // Nếu xe vào có dùng thẻ nhưng ra không có thẻ => Mất thẻ
+      // Nếu xe vào có dùng thẻ nhưng ra không có thẻ => Chuyển thẳng sang Mất thẻ
       if (selectedEntry.cardUid) {
-        setValue('checkoutType', 'lost');
-      } else {
-        // Nếu xe vào không dùng thẻ (vào lụi/không thẻ) => Checkout không thẻ
-        setValue('checkoutType', 'virtual');
+        router.push({
+          pathname: '/gate/lost-card',
+          params: { 
+            plate: outPlate, 
+            fullImage: outFullImage, 
+            plateImage: outPlateImage,
+            entryId: selectedEntry.id
+          }
+        });
+        return;
       }
+
+      // Nếu xe vào không dùng thẻ (vào lụi/không thẻ) => Checkout không thẻ
+      setValue('checkoutType', 'virtual');
     }
   };
 
@@ -121,8 +164,8 @@ export default function CheckOutScreen() {
     return checkPlateMatch(entry?.plateText, outPlate);
   }, [entry, outPlate]);
 
-  const isLostCard = checkoutType === 'lost';
-  const isReasonRequired = !plateMatch || isLostCard;
+  const isLostCard = false;
+  const isReasonRequired = !plateMatch;
 
   const pricing = useMemo(() => {
     return calculateParkingPricing(entry, sysConfig, pricingRules, isLostCard, isMonthly);
@@ -159,18 +202,7 @@ export default function CheckOutScreen() {
       });
     };
 
-    if (data.checkoutType === 'lost') {
-      Alert.alert(
-        "Xác nhận MẤT THẺ",
-        "Bạn đang xác nhận xe ra trong tình trạng mất thẻ. Phụ thu 50.000đ sẽ được áp dụng. Bạn có chắc chắn?",
-        [
-          { text: "Bỏ qua", style: "cancel" },
-          { text: "Xác nhận", onPress: finalize }
-        ]
-      );
-    } else {
-      finalize();
-    }
+    finalize();
   };
 
   const triggerQRPayment = (data: TCheckoutForm) => {
@@ -220,7 +252,10 @@ export default function CheckOutScreen() {
   }
 
   const isFormValid = !!checkoutType && (!isReasonRequired || (!!reason && reason.trim().length > 0));
-  const isTypeLocked = !!entry && (!tagUid || tagUid === 'undefined');
+  
+  // Logic cho việc chọn hình thức ra thủ công (không thẻ)
+  const canBeVirtual = entry && !entry.cardUid; // Chỉ cho phép nếu xe vào không thẻ
+  const canBeLost = entry && entry.cardUid;    // Chỉ cho phép nếu xe vào có thẻ
 
   return (
     <View className="flex-1 bg-[#F8FAFC]">
@@ -376,52 +411,49 @@ export default function CheckOutScreen() {
           >
             <View className="flex-row items-center mb-4">
               <AlertTriangle size={18} color={COLORS.slate[500]} />
-              <Text className="text-[12px] font-bold text-slate-400 uppercase tracking-widest ml-2">Hình thức ra (Bắt buộc)</Text>
+              <View className="flex-1 ml-2">
+                <Text className="text-[12px] font-bold text-slate-400 uppercase tracking-widest">Hình thức ra</Text>
+                <Text className="text-[10px] text-slate-400">Dựa trên dữ liệu lúc xe vào bãi</Text>
+              </View>
             </View>
             
             <View className="flex-row gap-3">
               <Pressable 
-                onPress={() => !isTypeLocked && setValue('checkoutType', 'virtual')}
-                disabled={isTypeLocked}
-                className={`flex-1 flex-row items-center p-4 rounded-xl border ${checkoutType === 'virtual' ? 'bg-[#eff6ff] border-[#bfdbfe]' : 'bg-[#F8FAFC] border-slate-200'} ${isTypeLocked ? 'opacity-70' : ''}`}
+                onPress={() => canBeVirtual && setValue('checkoutType', 'virtual')}
+                disabled={!canBeVirtual}
+                className={`flex-1 flex-row items-center p-4 rounded-xl border ${checkoutType === 'virtual' ? 'bg-[#eff6ff] border-[#bfdbfe]' : 'bg-[#F8FAFC] border-slate-200'} ${!canBeVirtual ? 'opacity-40' : ''}`}
               >
                 {checkoutType === 'virtual' ? <CheckCircle2 size={16} color={COLORS.brand.blue} /> : <Circle size={16} color={COLORS.slate[200]} />}
-                <Text className={`ml-2 text-sm font-bold ${checkoutType === 'virtual' ? 'text-blue-500' : 'text-slate-500'}`}>Xe không thẻ</Text>
+                <View className="ml-2">
+                  <Text className={`text-sm font-bold ${checkoutType === 'virtual' ? 'text-blue-500' : 'text-slate-500'}`}>Xe không thẻ</Text>
+                  {!canBeVirtual && <Text className="text-[8px] text-slate-400">Xe này có dùng thẻ lúc vào</Text>}
+                </View>
               </Pressable>
               
               <Pressable 
-                onPress={() => !isTypeLocked && setValue('checkoutType', 'lost')}
-                disabled={isTypeLocked}
-                className={`flex-1 flex-row items-center p-4 rounded-xl border ${checkoutType === 'lost' ? 'bg-[#fff7ed] border-[#fed7aa]' : 'bg-[#F8FAFC] border-slate-200'} ${isTypeLocked ? 'opacity-70' : ''}`}
+                onPress={() => {
+                  if (canBeLost) {
+                    router.push({
+                      pathname: '/gate/lost-card',
+                      params: { 
+                        plate: outPlate, 
+                        fullImage: outFullImage, 
+                        plateImage: outPlateImage,
+                        entryId: entry?.id
+                      }
+                    });
+                  }
+                }}
+                disabled={!canBeLost}
+                className={`flex-1 flex-row items-center p-4 rounded-xl border ${canBeLost ? 'bg-[#fff7ed] border-[#fed7aa]' : 'bg-slate-50 border-slate-100 opacity-40'}`}
               >
-                {checkoutType === 'lost' ? <CheckCircle2 size={16} color={COLORS.brand.orange} /> : <Circle size={16} color={COLORS.slate[200]} />}
-                <Text className={`ml-2 text-sm font-bold ${checkoutType === 'lost' ? 'text-amber-500' : 'text-slate-500'}`}>Mất thẻ</Text>
+                <AlertTriangle size={16} color={canBeLost ? COLORS.brand.orange : COLORS.slate[400]} />
+                <View className="ml-2">
+                  <Text className={`text-sm font-bold ${canBeLost ? 'text-amber-500' : 'text-slate-400'}`}>Mất thẻ</Text>
+                  {!canBeLost && <Text className="text-[8px] text-slate-400">Xe này không thẻ lúc vào</Text>}
+                </View>
               </Pressable>
             </View>
-
-            {checkoutType === 'lost' && plateMatch && (
-              <View className="mt-4">
-                <View className="flex-row items-center mb-2">
-                  <MessageSquare size={14} color={COLORS.slate[400]} />
-                  <Text className="text-[10px] font-bold text-slate-400 uppercase ml-1">Lý do/Ghi chú</Text>
-                </View>
-                <Controller
-                  control={control}
-                  name="reason"
-                  render={({ field: { onChange, value } }) => (
-                    <TextInput
-                      value={value}
-                      onChangeText={onChange}
-                      placeholder="Nhập lý do mất thẻ hoặc ghi chú..."
-                      multiline
-                      numberOfLines={3}
-                      className="bg-[#F8FAFC] border border-slate-200 rounded-lg p-3 text-sm text-[#1E293B] min-h-[80px]"
-                      textAlignVertical="top"
-                    />
-                  )}
-                />
-              </View>
-            )}
           </View>
         )}
 
@@ -448,12 +480,7 @@ export default function CheckOutScreen() {
               <Text className="text-sm text-slate-500">Tiền gửi xe</Text>
               <Text className="text-sm font-bold text-[#1E293B]">{pricing.fee.toLocaleString()}đ</Text>
             </View>
-            {isLostCard && (
-              <View className="flex-row justify-between mb-2">
-                <Text className="text-sm text-red-500 font-bold">Phụ thu mất thẻ</Text>
-                <Text className="text-sm font-bold text-red-500">+{pricing.surcharge.toLocaleString()}đ</Text>
-              </View>
-            )}
+            {/* Phụ thu mất thẻ đã được tách sang màn hình riêng */}
           </View>
           
           <View className="bg-[#fff7ed] p-6 items-center justify-center border-t border-[#ffedd5]">

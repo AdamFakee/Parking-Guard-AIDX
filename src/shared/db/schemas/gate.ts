@@ -50,6 +50,7 @@ export const parkingEntries = sqliteTable(
     status: text('status', { enum: ['IN', 'OUT', 'VOID'] }).notNull(),
     voidReason: text('void_reason'),
     isLostCard: integer('is_lost_card', { mode: 'boolean' }).default(false),
+    lostCardReason: text('lost_card_reason'),
     synced: integer('synced', { mode: 'boolean' }).default(false),
   },
   (table) => ({

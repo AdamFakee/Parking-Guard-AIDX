@@ -275,6 +275,15 @@ export const getActiveEntryByCard = async (cardUid: string) => {
   return entry;
 };
 
+export const getEntryById = async (id: string) => {
+  const [entry] = await db
+    .select()
+    .from(schema.parkingEntries)
+    .where(eq(schema.parkingEntries.id, id))
+    .limit(1);
+  return entry;
+};
+
 export type CheckOutParams = {
   entryId: string;
   shiftId: string;
@@ -285,6 +294,7 @@ export type CheckOutParams = {
   feeAmount: number;
   paymentMethod: 'cash' | 'qr_transfer';
   isLostCard?: boolean;
+  lostCardReason?: string;
   mismatchReason?: string;
   plateMatch: boolean;
 };
@@ -314,6 +324,7 @@ export const checkOut = async (params: CheckOutParams) => {
       paymentMethod: params.paymentMethod,
       status: 'OUT',
       isLostCard: params.isLostCard || false,
+      lostCardReason: params.lostCardReason || null,
       mismatchReason: params.mismatchReason || null,
       manualInputOut: false,
     })

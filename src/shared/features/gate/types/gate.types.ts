@@ -20,4 +20,5 @@ export type TScanPlateResultParams = {
   plate: string;
   fullImage: string;
   plateImage: string;
+  entryId?: string;
 };
