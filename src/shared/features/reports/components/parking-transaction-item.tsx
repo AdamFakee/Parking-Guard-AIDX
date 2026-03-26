@@ -1,5 +1,6 @@
 import { formatDisplayPlate } from '@/shared/features/gate/utils';
 import { ParkingEntry } from '@/shared/db';
+import { Banknote, CreditCard } from 'lucide-react-native';
 import React from 'react';
 import { Image, Pressable, Text, View } from 'react-native';
 
@@ -31,6 +32,9 @@ export const ParkingTransactionItem = ({
   const vehicleLabel = VEHICLE_TYPE_LABELS[item.vehicleType] || item.vehicleType;
   const displayImage = imageUri || item.photoIn1;
 
+  const PaymentIcon = item.paymentMethod === 'qr_transfer' ? CreditCard : Banknote;
+  const paymentColor = item.paymentMethod === 'qr_transfer' ? '#3b82f6' : '#10b981';
+
   return (
     <Pressable 
       onPress={onPress ? () => onPress(item) : undefined}
@@ -44,13 +48,25 @@ export const ParkingTransactionItem = ({
 
       {/* Info Section */}
       <View className="flex-1 ml-4">
-        <Text className="text-lg font-bold text-slate-800">{displayPlate}</Text>
+        <View className="flex-row items-center justify-between">
+            <Text className="text-lg font-bold text-slate-800">{displayPlate}</Text>
+        </View>
         {displayTime && (
           <Text className="text-xs text-slate-500">{displayTime}</Text>
         )}
-        <Text className="text-[10px] text-slate-400 mt-1 uppercase">
-          Loại phương tiện: {vehicleLabel}
-        </Text>
+        <View className="flex-row items-center mt-1">
+            <Text className="text-[10px] text-slate-400 uppercase mr-2">
+                {vehicleLabel}
+            </Text>
+            {item.status === 'OUT' && (
+                <View className="flex-row items-center opacity-60">
+                    <PaymentIcon size={10} color={paymentColor} />
+                    <Text className="text-[10px] ml-1 uppercase" style={{ color: paymentColor }}>
+                        {item.paymentMethod === 'qr_transfer' ? 'QR' : 'Tiền mặt'}
+                    </Text>
+                </View>
+            )}
+        </View>
       </View>
 
       {/* Custom Right Content */}

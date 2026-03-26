@@ -172,7 +172,7 @@ export const reportApis = {
   /**
    * Thống kê doanh thu chi tiết (có thể lọc theo thời gian)
    */
-  async getRevenueReport(startDate?: Date, endDate?: Date) {
+  async getRevenueReport(limit = 15, offset = 0, startDate?: Date, endDate?: Date) {
     const whereClause = [];
     if (startDate) whereClause.push(gte(parkingEntries.exitTime, startDate));
     if (endDate) whereClause.push(lte(parkingEntries.exitTime, endDate));
@@ -182,11 +182,15 @@ export const reportApis = {
       .select({
         date: sql<string>`date(${parkingEntries.exitTime} / 1000, 'unixepoch')`,
         total: sql<number>`sum(${parkingEntries.feeAmount})`,
+        cash: sql<number>`sum(case when ${parkingEntries.paymentMethod} = 'cash' then ${parkingEntries.feeAmount} else 0 end)`,
+        qr: sql<number>`sum(case when ${parkingEntries.paymentMethod} = 'qr_transfer' then ${parkingEntries.feeAmount} else 0 end)`,
         count: sql<number>`count(*)`,
       })
       .from(parkingEntries)
       .where(and(...whereClause))
       .groupBy(sql`date(${parkingEntries.exitTime} / 1000, 'unixepoch')`)
-      .orderBy(sql`date(${parkingEntries.exitTime} / 1000, 'unixepoch') desc`);
+      .orderBy(sql`date(${parkingEntries.exitTime} / 1000, 'unixepoch') desc`)
+      .limit(limit)
+      .offset(offset);
   },
 };
