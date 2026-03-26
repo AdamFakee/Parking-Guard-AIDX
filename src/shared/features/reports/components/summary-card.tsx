@@ -32,7 +32,7 @@ export const SummaryCard = ({
   return (
     <Container onPress={onPress} className={cn('flex-1 min-w-[150px] mb-md', className)}>
       <Card className="p-md" shadow>
-        <View className="flex-row items-center justify-between mb-sm">
+        <View className="flex-row items-center justify-center mb-sm">
           <View 
             className="p-sm rounded-lg" 
             style={{ backgroundColor: `${iconColor}20` }}
@@ -52,11 +52,11 @@ export const SummaryCard = ({
             </Text>
           )}
         </View>
-        <Text className="text-slate-400 text-xs mb-xs">{title}</Text>
+        <Text className="text-slate-400 text-xs mb-xs text-center">{title}</Text>
         {isLoading ? (
           <Skeleton height={24} width="80%" className="mt-xs" />
         ) : (
-          <Text className="text-slate-900 text-xl font-bold">{value}</Text>
+          <Text className="text-slate-900 text-xl font-bold text-center">{value}</Text>
         )}
       </Card>
     </Container>

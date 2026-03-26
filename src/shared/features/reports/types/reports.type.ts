@@ -18,7 +18,7 @@ export interface ReportOverview {
   };
 }
 
-export type DateRangeType = 'today' | 'yesterday' | 'last7days' | 'thisMonth';
+export type DateRangeType = 'today' | 'yesterday' | 'last7days' | 'thisMonth' | 'custom';
 
 export interface ReportDashboardOverviewProps {
   // Now self-contained, but keep optional for flexibility

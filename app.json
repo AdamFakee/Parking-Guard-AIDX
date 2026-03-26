@@ -94,7 +94,8 @@
             "./src/assets/models/best_int8.tflite"
           ]
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true,

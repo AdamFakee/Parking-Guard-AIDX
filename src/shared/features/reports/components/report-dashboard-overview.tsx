@@ -1,7 +1,9 @@
 import { cn } from '@/shared/utils';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import {
   endOfDay,
   endOfMonth,
+  format,
   startOfDay,
   startOfMonth,
   subDays
@@ -9,7 +11,7 @@ import {
 import { useRouter } from 'expo-router';
 import { ArrowRightLeft, Car, ChevronRight, DollarSign, TrendingUp } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { RANGES, RANGE_LABELS } from '../constants';
 import { useReportOverview } from '../hooks/use-report-overview';
 import { DateRangeType } from '../types';
@@ -21,6 +23,7 @@ export const ReportDashboardOverview = () => {
     start: startOfDay(new Date()),
     end: endOfDay(new Date()),
   });
+  const [showPicker, setShowPicker] = useState(false);
 
   const { data: overview, isLoading } = useReportOverview(dates.start, dates.end);
 
@@ -28,6 +31,11 @@ export const ReportDashboardOverview = () => {
   const label = RANGE_LABELS[range];
 
   const handleRangePress = (newRange: DateRangeType) => {
+    if (newRange === 'custom') {
+      setShowPicker(true);
+      return;
+    }
+
     const now = new Date();
     let start = startOfDay(now);
     let end = endOfDay(now);
@@ -49,6 +57,17 @@ export const ReportDashboardOverview = () => {
 
     setRange(newRange);
     setDates({ start, end });
+  };
+
+  const onPickerChange = (event: any, selectedDate?: Date) => {
+    setShowPicker(false);
+    if (selectedDate) {
+      setRange('custom');
+      setDates({
+        start: startOfDay(selectedDate),
+        end: endOfDay(selectedDate),
+      });
+    }
   };
 
   const handleDetailPress = () => {
@@ -73,12 +92,13 @@ export const ReportDashboardOverview = () => {
           {RANGES.map((r) => {
             const isActive = range === r.value;
             return (
-              <TouchableOpacity
+              <Pressable
                 key={r.value}
+                hitSlop={10}
                 onPress={() => handleRangePress(r.value)}
                 className={`px-md py-xs rounded-full border ${
                   isActive 
-                    ? 'bg-blue-600 border-blue-600' 
+                    ? 'bg-primary border-primary' 
                     : 'bg-white border-slate-200'
                 }`}
               >
@@ -87,14 +107,21 @@ export const ReportDashboardOverview = () => {
                 }`}>
                   {r.label}
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
             );
           })}
         </ScrollView>
       </View>
 
       <View className="flex-row items-center justify-between mb-md">
-        <Text className="text-slate-900 text-lg font-bold">Tổng quan {label.toLowerCase()}</Text>
+        <View>
+          <Text className="text-slate-900 text-lg font-bold">Tổng quan {label.toLowerCase()}</Text>
+          {range === 'custom' && (
+            <Text className="text-slate-500 text-sm">
+              Ngày {format(dates.start, 'dd/MM/yyyy')}
+            </Text>
+          )}
+        </View>
         <Pressable 
           onPress={handleDetailPress}
           hitSlop={10}
@@ -141,6 +168,16 @@ export const ReportDashboardOverview = () => {
           isLoading={isLoading}
         />
       </View>
+
+      {showPicker && (
+        <DateTimePicker
+          value={dates.start}
+          mode="date"
+          display="default"
+          onChange={onPickerChange}
+          maximumDate={new Date()}
+        />
+      )}
     </View>
   );
 };

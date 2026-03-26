@@ -5,6 +5,7 @@ export const RANGES: { label: string; value: DateRangeType }[] = [
   { label: 'Hôm qua', value: 'yesterday' },
   { label: '7 ngày qua', value: 'last7days' },
   { label: 'Tháng này', value: 'thisMonth' },
+  { label: 'Tùy chỉnh', value: 'custom' },
 ];
 
 export const RANGE_LABELS: Record<DateRangeType, string> = {
@@ -12,4 +13,5 @@ export const RANGE_LABELS: Record<DateRangeType, string> = {
   yesterday: 'Hôm qua',
   last7days: '7 ngày qua',
   thisMonth: 'Tháng này',
+  custom: '',
 };
