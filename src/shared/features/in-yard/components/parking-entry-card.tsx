@@ -18,17 +18,27 @@ export const ParkingEntryCard = ({ entry, onPress, onOptionsPress }: ParkingEntr
     >
       <View className="w-20 h-20 rounded-xl bg-slate-50 overflow-hidden flex-shrink-0 border border-slate-100">
         <Image 
-          source={{uri: entry.photoIn1}} 
-          contentFit="cover" 
-          transition={200}
-          style={{width: '100%', height: '100%'}}
+          source={{ uri: entry.photoIn1 }}
+          contentFit="cover"
+          cachePolicy="memory-disk"
+          placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
+          priority="low"
+          recyclingKey={entry.id}
+          style={{ width: '100%', height: '100%' }}
+          transition={100}
         />
       </View>
       <View className="flex-1 flex flex-col justify-between py-0.5">
         <View>
           <View className="flex-row items-center mb-1">
-            <View className="px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-100 self-start">
-              <Text className="text-emerald-500 text-[10px] font-bold uppercase tracking-wider" >Trong bãi</Text>
+            <View className={`px-2 py-0.5 rounded-md border self-start ${
+              entry.status === 'IN' ? 'bg-emerald-50 border-emerald-100' : 'bg-slate-50 border-slate-100'
+            }`}>
+              <Text className={`text-[10px] font-bold uppercase tracking-wider ${
+                entry.status === 'IN' ? 'text-emerald-500' : 'text-slate-400'
+              }`}>
+                {entry.status === 'IN' ? 'Trong bãi' : entry.status === 'OUT' ? 'Đã ra' : 'Hủy'}
+              </Text>
             </View>
           </View>
           <Text className="text-lg font-mono font-bold text-slate-800 leading-none mb-1">

@@ -14,5 +14,9 @@ export function useInYardEntries(params: Omit<GetInYardParams, 'page'>) {
     initialPageParam: 1,
     networkMode: 'always',
     refetchOnMount: 'always',
+    staleTime: 30000, // 30s cache
+    gcTime: 5 * 60 * 1000, // 5 min
+    refetchOnWindowFocus: false,
+    maxPages: 3, // Limit memory for infinite scroll
   });
 }

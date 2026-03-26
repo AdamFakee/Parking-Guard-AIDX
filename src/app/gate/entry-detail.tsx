@@ -71,13 +71,13 @@ export default function EntryDetailScreen() {
               <View className="flex-row gap-3">
                 <View className="flex-1">
                   <View className="aspect-square bg-slate-100 rounded-2xl overflow-hidden border border-slate-100">
-                    <Image source={entry.photoOut1 || ''} className="w-full h-full" contentFit="cover" transition={200} />
+                    <Image source={entry.photoOut1 || ''} contentFit="cover" transition={200} style={{width: '100%', height: '100%'}} />
                   </View>
                   <Text className="text-center text-[10px] text-slate-400 mt-1.5 font-medium">Toàn cảnh</Text>
                 </View>
                 <View className="flex-1">
                   <View className="aspect-square bg-slate-100 rounded-2xl overflow-hidden border border-slate-100">
-                    <Image source={entry.photoOut2 || ''} className="w-full h-full" contentFit="cover" transition={200} />
+                    <Image source={entry.photoOut2 || ''} contentFit="contain" transition={200} style={{width: '100%', height: '100%'}} />
                   </View>
                   <Text className="text-center text-[10px] text-slate-400 mt-1.5 font-medium">Biển số</Text>
                 </View>
@@ -200,16 +200,20 @@ export default function EntryDetailScreen() {
           {entry.isLostCard && (
              <View className="bg-red-50 rounded-3xl p-5 border border-red-100">
                 <Text className="text-[10px] font-bold text-red-400 uppercase tracking-widest mb-2">Thông tin mất thẻ</Text>
-                <Text className="text-red-700 font-bold mb-1">Ghi chú:</Text>
-                <Text className="text-red-600 text-sm leading-relaxed">{entry.lostCardReason || 'Không có ghi chú chi tiết'}</Text>
+                <Text className="text-red-600 text-sm leading-relaxed">
+                  <Text className="text-red-700 font-bold">Ghi chú: </Text>
+                  {entry.lostCardReason || 'Không có ghi chú chi tiết'}
+                </Text>
              </View>
           )}
 
           {entry.plateMatch === false && (
              <View className="bg-amber-50 rounded-3xl p-5 border border-amber-100">
                 <Text className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-2">Cảnh báo sai biển số</Text>
-                <Text className="text-amber-700 font-bold mb-1">Lý do xác nhận ra:</Text>
-                <Text className="text-amber-600 text-sm leading-relaxed">{entry.mismatchReason || 'Xác nhận biển số không khớp thủ công'}</Text>
+                <Text className="text-amber-600 text-sm leading-relaxed">
+                  <Text className="text-amber-700 font-bold">Lý do xác nhận: </Text>
+                  {entry.mismatchReason || 'Xác nhận biển số không khớp thủ công'}
+                </Text>
              </View>
           )}
         </View>
