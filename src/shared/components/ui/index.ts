@@ -7,4 +7,5 @@ export * from './haptic-tab'
 export * from './loading'
 export * from './option'
 export * from './placeholder'
+export * from './skeleton';
 

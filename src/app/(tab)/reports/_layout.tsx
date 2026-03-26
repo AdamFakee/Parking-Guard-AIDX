@@ -11,10 +11,13 @@ export default function ReportsLayout() {
         name="index"
       />
       <Stack.Screen
-        name="shifts"
+        name="shifts/index"
       />
       <Stack.Screen
         name="revenue"
+      />
+      <Stack.Screen
+        name="overview-detail"
       />
     </Stack>
   );

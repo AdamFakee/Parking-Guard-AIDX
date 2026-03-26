@@ -1,4 +1,4 @@
-import { Card } from '@/shared/components/ui';
+import { Card, Skeleton } from '@/shared/components/ui';
 import { cn } from '@/shared/utils';
 import { LucideIcon } from 'lucide-react-native';
 import React from 'react';
@@ -12,6 +12,7 @@ interface SummaryCardProps {
   trend?: string;
   trendType?: 'up' | 'down' | 'neutral';
   onPress?: () => void;
+  isLoading?: boolean;
   className?: string;
 }
 
@@ -23,6 +24,7 @@ export const SummaryCard = ({
   trend,
   trendType = 'neutral',
   onPress,
+  isLoading,
   className,
 }: SummaryCardProps) => {
   const Container = onPress ? TouchableOpacity : View;
@@ -37,7 +39,7 @@ export const SummaryCard = ({
           >
             <Icon size={20} color={iconColor} />
           </View>
-          {trend && (
+          {trend && !isLoading && (
             <Text 
               className={cn(
                 'text-xs font-medium',
@@ -51,7 +53,11 @@ export const SummaryCard = ({
           )}
         </View>
         <Text className="text-slate-400 text-xs mb-xs">{title}</Text>
-        <Text className="text-slate-900 text-xl font-bold">{value}</Text>
+        {isLoading ? (
+          <Skeleton height={24} width="80%" className="mt-xs" />
+        ) : (
+          <Text className="text-slate-900 text-xl font-bold">{value}</Text>
+        )}
       </Card>
     </Container>
   );
