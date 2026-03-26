@@ -1,11 +1,14 @@
 import { AppHeader } from '@/shared/components/ui';
 import { COLORS } from '@/shared/constants';
-import { TVehicleType } from '@/shared/features/gate';
+import { TParkingEntry, TSearchVehicleType, TVehicleType } from '@/shared/features/gate';
 import { useInYardEntries } from '@/shared/features/in-yard';
 import { ParkingEntryCard } from '@/shared/features/in-yard/components/parking-entry-card';
-import { Activity, Bike, Car } from 'lucide-react-native';
-import React, { useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
+import { useRouter } from 'expo-router';
+import React, { useCallback, useMemo, useState } from 'react';
+import { ActivityIndicator, Pressable, RefreshControl, Text, View } from 'react-native';
+
+const TypedFlashList: any = FlashList;
 
 export default function InYardScreen() {
   const [vehicleType, setVehicleType] = useState<TVehicleType | 'all'>('all');
@@ -20,16 +23,18 @@ export default function InYardScreen() {
     isRefetching 
   } = useInYardEntries({ vehicleType });
 
-  const entries = useMemo(() => {
+  const entries = useMemo<TParkingEntry[]>(() => {
     return data?.pages.flatMap((page) => page) || [];
   }, [data]);
 
-  const vehicleFilters: { label: string; value: TVehicleType | 'all'; icon: any }[] = [
-    { label: 'Tất cả', value: 'all', icon: null },
-    { label: 'Xe máy', value: 'motorbike', icon: Bike },
-    { label: 'Ô tô', value: 'car', icon: Car },
-    { label: 'Xe điện', value: 'ebike', icon: Activity },
+  const vehicleFilters: { label: string; value: TSearchVehicleType }[] = [
+    { label: 'Tất cả', value: 'all' },
+    { label: 'Xe máy', value: 'motorbike' },
+    { label: 'Ô tô', value: 'car' },
+    { label: 'Xe điện', value: 'ebike' },
   ];
+
+  const router = useRouter();
 
   const handleEndReached = () => {
     if (hasNextPage && !isFetchingNextPage) {
@@ -37,16 +42,22 @@ export default function InYardScreen() {
     }
   };
 
+  const renderItem = useCallback(({ item }: { item: TParkingEntry }) => (
+    <ParkingEntryCard 
+      entry={item} 
+      onPress={(entry) => router.push(`/gate/entry-detail?id=${entry.id}`)}
+    />
+  ), [router]);
+
   return (
     <View className="flex-1 bg-[#F8FAFC]">
-      <AppHeader title="Xe trong bãi" />
+      <AppHeader title="Xe trong bãi" showLeftButton={false} />
 
       {/* Filter Tabs */}
       <View className="px-4 pb-4 bg-white border-b border-slate-100">
         <View className="flex-row gap-2 mt-2">
           {vehicleFilters.map((filter) => {
             const isSelected = vehicleType === filter.value;
-            const Icon = filter.icon;
             return (
               <Pressable
                 key={filter.value}
@@ -57,13 +68,6 @@ export default function InYardScreen() {
                     : 'bg-white border-slate-200'
                 }`}
               >
-                {Icon && (
-                  <Icon
-                    size={16}
-                    color={isSelected ? 'white' : COLORS.slate[500]}
-                    className="mr-2"
-                  />
-                )}
                 <Text
                   className={`text-sm font-semibold ${
                     isSelected ? 'text-white' : 'text-slate-600'
@@ -90,14 +94,16 @@ export default function InYardScreen() {
             <ActivityIndicator size="large" color={COLORS.brand.blue} />
           </View>
         ) : (
-          <FlatList
+          <TypedFlashList
             data={entries}
-            keyExtractor={(item) => item.id}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 100, gap: 12 }}
-            renderItem={({ item }) => <ParkingEntryCard entry={item} />}
+            keyExtractor={(item: TParkingEntry) => item.id}
+            renderItem={renderItem}
+            estimatedItemSize={104}
             onEndReached={handleEndReached}
-            onEndReachedThreshold={0.5}
+            onEndReachedThreshold={0.3}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: 100 }}
+            ItemSeparatorComponent={() => <View className="h-3" />}
             refreshControl={
               <RefreshControl 
                 refreshing={isRefetching} 

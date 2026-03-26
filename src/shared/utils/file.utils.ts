@@ -1,4 +1,4 @@
-import { File, Directory, Paths } from 'expo-file-system';
+import { Directory, File, Paths } from 'expo-file-system';
 
 /**
  * Đảm bảo các ảnh được lưu trữ trong thư mục Document vĩnh viễn.

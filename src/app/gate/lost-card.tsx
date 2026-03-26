@@ -1,8 +1,6 @@
 import { AppHeader } from '@/shared/components/ui';
 import { COLORS } from '@/shared/constants/color.const';
 import { 
-  calculateParkingPricing, 
-  checkPlateMatch,
   checkoutSchema, 
   CheckoutFooter, 
   formatDisplayPlate, 
@@ -20,6 +18,7 @@ import {
   VehicleImageComparison, 
   VehicleSearch 
 } from '@/shared/features/gate';
+import { calculateParkingPricing, checkPlateMatch } from '@/shared/features/gate/utils';
 import { checkNfcCardUsage, getEntryById } from '@/shared/features/gate/apis/gate.api';
 import { useShiftStore } from '@/shared/features/shift';
 import { valibotResolver } from '@hookform/resolvers/valibot';

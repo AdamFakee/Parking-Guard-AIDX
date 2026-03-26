@@ -1,6 +1,7 @@
-import { Text, View, Image, Pressable } from 'react-native';
 import { format } from 'date-fns';
+import { Image } from 'expo-image';
 import { Clock } from 'lucide-react-native';
+import { Pressable, Text, View } from 'react-native';
 import { TParkingEntry } from '../../gate';
 
 interface ParkingEntryCardProps {
@@ -17,16 +18,17 @@ export const ParkingEntryCard = ({ entry, onPress, onOptionsPress }: ParkingEntr
     >
       <View className="w-20 h-20 rounded-xl bg-slate-50 overflow-hidden flex-shrink-0 border border-slate-100">
         <Image 
-          source={{ uri: entry.photoIn1 }} 
-          className="w-full h-full" 
-          resizeMode="cover" 
+          source={{uri: entry.photoIn1}} 
+          contentFit="cover" 
+          transition={200}
+          style={{width: '100%', height: '100%'}}
         />
       </View>
       <View className="flex-1 flex flex-col justify-between py-0.5">
         <View>
           <View className="flex-row items-center mb-1">
             <View className="px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-100 self-start">
-              <Text className="text-emerald-500 text-[10px] font-bold uppercase tracking-wider">Trong bãi</Text>
+              <Text className="text-emerald-500 text-[10px] font-bold uppercase tracking-wider" >Trong bãi</Text>
             </View>
           </View>
           <Text className="text-lg font-mono font-bold text-slate-800 leading-none mb-1">
