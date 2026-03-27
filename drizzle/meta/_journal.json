@@ -50,6 +50,13 @@
       "when": 1774492296172,
       "tag": "0006_grey_vapor",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1774575560936,
+      "tag": "0007_bouncy_blue_shield",
+      "breakpoints": true
     }
   ]
 }

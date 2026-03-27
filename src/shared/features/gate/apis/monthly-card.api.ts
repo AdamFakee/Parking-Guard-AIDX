@@ -6,6 +6,7 @@ export type MonthlySubscriptionParams = {
   customerName: string;
   customerPhone?: string;
   photoProfile?: string;
+  photoVehicle?: string;
   vehicleType: 'motorbike' | 'car' | 'ebike';
   vehiclePlate: string;
   startDate: Date;

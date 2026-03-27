@@ -24,3 +24,8 @@ export const LOST_CARD_REASONS = [
   'Khách để quên thẻ trên xe (Đã lấy hàng ra)',
   'Thẻ không phản hồi (Lỗi kỹ thuật)',
 ];
+
+export const DEFAULT_MONTHLY_PRICE = 100000;
+export const DEFAULT_MONTHLY_PRICE_CAR = 500000;
+export const DEFAULT_MONTHLY_PRICE_MOTORBIKE = 100000;
+export const DEFAULT_MONTHLY_PRICE_EBIKE = 100000;

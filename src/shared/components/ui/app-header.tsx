@@ -14,6 +14,10 @@ interface AppHeaderProps {
    */
   title?: string;
   /**
+   * Optional subtitle displayed below the title.
+   */
+  subtitle?: string;
+  /**
    * Visual variant of the header.
    * - 'surface': Uses the app surface background (default).
    * - 'dark': Uses the darker background color.
@@ -55,6 +59,7 @@ interface AppHeaderProps {
  */
 export const AppHeader = ({
   title,
+  subtitle,
   variant = 'surface',
   onLeftPress,
   rightIcon,
@@ -173,6 +178,14 @@ export const AppHeader = ({
             numberOfLines={1}
           >
             {title}
+          </Text>
+        )}
+        {subtitle && (
+          <Text
+            className="text-[10px] text-slate-400 font-bold uppercase tracking-widest text-center"
+            numberOfLines={1}
+          >
+            {subtitle}
           </Text>
         )}
       </View>

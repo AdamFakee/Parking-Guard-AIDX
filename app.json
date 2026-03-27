@@ -37,12 +37,22 @@
       "predictiveBackGestureEnabled": false,
       "package": "com.anonymous.learningexpo",
       "permissions": [
-        "NFC"
+        "NFC",
+        "CAMERA",
+        "WRITE_EXTERNAL_STORAGE",
+        "READ_EXTERNAL_STORAGE"
       ]
     },
     "plugins": [
       "expo-router",
       "react-native-nfc-manager",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Cho phép ứng dụng truy cập thư viện ảnh.",
+          "cameraPermission": "Cho phép ứng dụng truy cập camera để chụp ảnh định danh."
+        }
+      ],
       [
         "expo-splash-screen",
         {

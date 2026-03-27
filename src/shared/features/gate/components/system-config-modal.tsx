@@ -14,6 +14,11 @@ import {
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import * as v from 'valibot';
 import {
+  DEFAULT_MONTHLY_PRICE_CAR,
+  DEFAULT_MONTHLY_PRICE_EBIKE,
+  DEFAULT_MONTHLY_PRICE_MOTORBIKE
+} from '../const';
+import {
   useCreatePricingRule,
   useDeletePricingRule,
   usePricingRules,
@@ -174,9 +179,9 @@ export const SystemConfigModal = forwardRef<SystemConfigModalRef>((_, ref) => {
       accountNumber: '',
       accountName: '',
       qrImageUrl: '',
-      monthlyPriceMotorbike: 100000 as any,
-      monthlyPriceCar: 500000 as any,
-      monthlyPriceEbike: 100000 as any,
+      monthlyPriceMotorbike: DEFAULT_MONTHLY_PRICE_MOTORBIKE as any,
+      monthlyPriceCar: DEFAULT_MONTHLY_PRICE_CAR as any,
+      monthlyPriceEbike: DEFAULT_MONTHLY_PRICE_EBIKE as any,
     },
   });
 
@@ -205,9 +210,9 @@ export const SystemConfigModal = forwardRef<SystemConfigModalRef>((_, ref) => {
         accountNumber: config.accountNumber || '',
         accountName: config.accountName || '',
         qrImageUrl: config.qrImageUrl || '',
-        monthlyPriceMotorbike: String(config.monthlyPriceMotorbike || 100000) as any,
-        monthlyPriceCar: String(config.monthlyPriceCar || 500000) as any,
-        monthlyPriceEbike: String(config.monthlyPriceEbike || 100000) as any,
+        monthlyPriceMotorbike: String(config.monthlyPriceMotorbike || DEFAULT_MONTHLY_PRICE_MOTORBIKE) as any,
+        monthlyPriceCar: String(config.monthlyPriceCar || DEFAULT_MONTHLY_PRICE_CAR) as any,
+        monthlyPriceEbike: String(config.monthlyPriceEbike || DEFAULT_MONTHLY_PRICE_EBIKE) as any,
       });
     }
   }, [config, resetConfig, visible]);
@@ -397,7 +402,7 @@ export const SystemConfigModal = forwardRef<SystemConfigModalRef>((_, ref) => {
                         name="monthlyPriceMotorbike"
                         label="Xe máy (₫)"
                         keyboardType="numeric"
-                        placeholder="100000"
+                        placeholder={String(DEFAULT_MONTHLY_PRICE_MOTORBIKE)}
                       />
                     </View>
                     <View className="flex-1">
@@ -406,7 +411,7 @@ export const SystemConfigModal = forwardRef<SystemConfigModalRef>((_, ref) => {
                         name="monthlyPriceEbike"
                         label="Xe đạp điện (₫)"
                         keyboardType="numeric"
-                        placeholder="100000"
+                        placeholder={String(DEFAULT_MONTHLY_PRICE_EBIKE)}
                       />
                     </View>
                   </View>
@@ -416,7 +421,7 @@ export const SystemConfigModal = forwardRef<SystemConfigModalRef>((_, ref) => {
                     name="monthlyPriceCar"
                     label="Xe ô tô (₫)"
                     keyboardType="numeric"
-                    placeholder="500000"
+                    placeholder={String(DEFAULT_MONTHLY_PRICE_CAR)}
                   />
                 </View>
 

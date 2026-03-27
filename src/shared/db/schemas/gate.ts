@@ -71,6 +71,7 @@ export const monthlySubscriptions = sqliteTable('monthly_subscriptions', {
   customerName: text('customer_name').notNull(),
   customerPhone: text('customer_phone'),
   photoProfile: text('photo_profile'),
+  photoVehicle: text('photo_vehicle'),
   vehicleType: text('vehicle_type', { enum: ['motorbike', 'car', 'ebike'] }).notNull(),
   vehiclePlate: text('vehicle_plate').notNull(),
   startDate: integer('start_date', { mode: 'timestamp_ms' }).notNull(),

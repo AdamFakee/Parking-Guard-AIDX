@@ -1,0 +1,1 @@
+ALTER TABLE `monthly_subscriptions` ADD `photo_vehicle` text;

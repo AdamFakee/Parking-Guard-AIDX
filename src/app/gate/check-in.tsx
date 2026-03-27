@@ -2,7 +2,7 @@ import { AppHeader, Button } from '@/shared/components/ui';
 import { CheckInPhotoPreview, CheckInStatusCards, EditPlateModal, ExpiredMonthlyCardModal, ExpiredMonthlyCardModalRef, VehicleSelector } from '@/shared/features/gate';
 import { checkNfcCardUsage } from '@/shared/features/gate/apis/gate.api';
 import { useCheckIn } from '@/shared/features/gate/hooks';
-import { TVehicleType, TScanPlateResultParams } from '@/shared/features/gate/types';
+import { TScanPlateResultParams, TVehicleType } from '@/shared/features/gate/types';
 import { useShiftStore } from '@/shared/features/shift';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { CheckCircle, Info } from 'lucide-react-native';
@@ -116,7 +116,7 @@ export default function CheckInScreen() {
         <View pointerEvents={isMonthly ? 'none' : 'auto'} style={{ opacity: isMonthly ? 0.6 : 1 }}>
           <VehicleSelector 
             value={vehicleType} 
-            onChange={setVehicleType} 
+            onSelect={setVehicleType} 
           />
         </View>
         {isMonthly && (

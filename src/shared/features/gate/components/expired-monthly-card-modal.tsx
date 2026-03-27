@@ -4,6 +4,7 @@ import { useResponsive } from '@/shared/hooks';
 import { AlertCircle, CalendarClock, CreditCard, QrCode, RotateCcw, Smartphone, Wallet } from 'lucide-react-native';
 import React, { forwardRef, useImperativeHandle, useState } from 'react';
 import { Alert, Modal, Text, View } from 'react-native';
+import { DEFAULT_MONTHLY_PRICE_MOTORBIKE } from '../const';
 import { useConvertCardToRegular, useRenewMonthlyCard, useSystemConfig } from '../hooks';
 import { QRPaymentContent } from './qr-payment-content';
 
@@ -66,7 +67,7 @@ export const ExpiredMonthlyCardModal = forwardRef<ExpiredMonthlyCardModalRef, Ex
 
     try {
       if (selectedOption === 'renew') {
-        const price = sysConfig?.monthlyPriceMotorbike || 100000;
+        const price = sysConfig?.monthlyPriceMotorbike || DEFAULT_MONTHLY_PRICE_MOTORBIKE;
         await performRenew({
           cardUid: tagUid,
           shiftId: currentShift.id,
@@ -90,7 +91,7 @@ export const ExpiredMonthlyCardModal = forwardRef<ExpiredMonthlyCardModalRef, Ex
     onCancel?.();
   };
 
-  const renewPrice = sysConfig?.monthlyPriceMotorbike || 100000;
+  const renewPrice = sysConfig?.monthlyPriceMotorbike || DEFAULT_MONTHLY_PRICE_MOTORBIKE;
 
   return (
     <Modal
