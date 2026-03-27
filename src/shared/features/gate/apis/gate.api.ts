@@ -297,14 +297,29 @@ export type CheckOutParams = {
   lostCardReason?: string;
   mismatchReason?: string;
   plateMatch: boolean;
+  photoPerson?: string;
+  photoVehicle?: string;
+  photoDocument?: string;
+  cancelMonthly?: boolean;
 };
 
 export const checkOut = async (params: CheckOutParams) => {
-  // 1. Update card status to 'free' if present
+  // 1. Update card status to 'free' or 'locked' if present
   if (params.cardUid && params.cardUid !== 'undefined') {
+    const status = params.isLostCard ? 'locked' : 'free';
     await db.update(schema.nfcCards)
-      .set({ status: 'free', updatedAt: new Date() })
+      .set({ status, updatedAt: new Date() })
       .where(eq(schema.nfcCards.uid, params.cardUid));
+  }
+
+  // 1.1 Cancel monthly subscription if needed
+  if (params.cancelMonthly && params.cardUid) {
+    await db.update(schema.monthlySubscriptions)
+      .set({ status: 'canceled' })
+      .where(and(
+        eq(schema.monthlySubscriptions.cardUid, params.cardUid),
+        eq(schema.monthlySubscriptions.status, 'active')
+      ));
   }
 
   // Ensure images are stored permanently
@@ -312,7 +327,7 @@ export const checkOut = async (params: CheckOutParams) => {
   const photoOut2 = await ensurePermanentImage(params.photoOut2);
 
   // 2. Update parking entry
-  return await db.update(schema.parkingEntries)
+  const [updatedRecord] = await db.update(schema.parkingEntries)
     .set({
       exitTime: new Date(),
       exitShiftId: params.shiftId,
@@ -328,7 +343,27 @@ export const checkOut = async (params: CheckOutParams) => {
       mismatchReason: params.mismatchReason || null,
       manualInputOut: false,
     })
-    .where(eq(schema.parkingEntries.id, params.entryId));
+    .where(eq(schema.parkingEntries.id, params.entryId))
+    .returning();
+
+  // 3. Create lost card report if needed
+  if (params.isLostCard) {
+    const photoPerson = params.photoPerson ? await ensurePermanentImage(params.photoPerson) : '';
+    const photoVehicle = params.photoVehicle ? await ensurePermanentImage(params.photoVehicle) : '';
+    const photoDocument = params.photoDocument ? await ensurePermanentImage(params.photoDocument) : null;
+
+    await db.insert(schema.lostCardReports).values({
+      entryId: params.entryId,
+      reportedPlate: params.exitPlate,
+      compensationFee: params.feeAmount, // Or just the surcharge? Pricing logic in UI calculates total.
+      photoPerson,
+      photoVehicle,
+      photoDocument,
+      createdAt: new Date(),
+    });
+  }
+
+  return updatedRecord;
 };
 
 export const getSystemConfig = async () => {

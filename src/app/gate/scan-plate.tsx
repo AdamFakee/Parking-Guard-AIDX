@@ -1,5 +1,6 @@
 import TextRecognition from '@react-native-ml-kit/text-recognition';
 import * as ImageManipulator from 'expo-image-manipulator';
+import { useIsFocused } from '@react-navigation/native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useRef } from 'react';
 import {
@@ -43,6 +44,7 @@ import {
  */
 export default function ScanPlateScreen() {
   const router = useRouter();
+  const isFocused = useIsFocused();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   
@@ -168,7 +170,7 @@ export default function ScanPlateScreen() {
         ref={camera} 
         style={StyleSheet.absoluteFill} 
         device={device} 
-        isActive={true} 
+        isActive={isFocused} 
         photo={true} 
       />
       <View className="flex-1">

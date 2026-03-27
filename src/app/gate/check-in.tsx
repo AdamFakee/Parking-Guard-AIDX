@@ -89,7 +89,7 @@ export default function CheckInScreen() {
       {/* Header */}
       <AppHeader title="Xác nhận xe vào" />
 
-      <ScrollView style={{ flex: 1, backgroundColor: 'white', padding: 16 }} contentContainerStyle={{ paddingBottom: 100 }}>
+      <ScrollView style={{ flex: 1, backgroundColor: 'white', padding: 16 }} contentContainerStyle={{ paddingBottom: 140 }}>
         {isMonthly && (
           <View style={{ backgroundColor: '#eff6ff', padding: 12, borderRadius: 12, marginBottom: 16, flexDirection: 'row', alignItems: 'center' }}>
             <Info size={20} color="#3b82f6" style={{ marginRight: 8 }} />
@@ -113,7 +113,7 @@ export default function CheckInScreen() {
           isMonthly={isMonthly}
         />
 
-        <View pointerEvents={isMonthly ? 'none' : 'auto'} style={{ opacity: isMonthly ? 0.6 : 1 }}>
+        <View pointerEvents={isMonthly ? 'none' : 'auto'}>
           <VehicleSelector 
             value={vehicleType} 
             onSelect={setVehicleType} 

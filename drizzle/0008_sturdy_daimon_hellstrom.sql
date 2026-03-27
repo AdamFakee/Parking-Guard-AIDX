@@ -1,0 +1,1 @@
+ALTER TABLE `lost_card_reports` ADD `photo_document` text;

@@ -99,6 +99,7 @@ export const lostCardReports = sqliteTable('lost_card_reports', {
   compensationFee: integer('compensation_fee').notNull(),
   photoVehicle: text('photo_vehicle').notNull(),
   photoPerson: text('photo_person').notNull(),
+  photoDocument: text('photo_document'),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }),
   synced: integer('synced', { mode: 'boolean' }).default(false),
 })

@@ -1,29 +1,30 @@
 import { AppHeader } from '@/shared/components/ui';
 import { COLORS } from '@/shared/constants/color.const';
-import { 
-  checkoutSchema, 
-  CheckoutFooter, 
-  formatDisplayPlate, 
-  LOST_CARD_REASONS, 
-  MonthlyInfoBanner, 
-  PricingBreakdown, 
-  QRPaymentModal, 
-  QRPaymentModalRef, 
-  TCheckoutForm, 
-  TParkingEntry, 
-  TScanPlateResultParams, 
-  useCheckOut, 
-  usePricingRules, 
-  useSystemConfig, 
-  VehicleImageComparison, 
-  VehicleSearch 
+import {
+  CheckoutFooter,
+  checkoutSchema,
+  formatDisplayPlate,
+  LOST_CARD_REASONS,
+  MonthlyInfoBanner,
+  PhotoCaptureCard,
+  PricingBreakdown,
+  QRPaymentModal,
+  QRPaymentModalRef,
+  TCheckoutForm,
+  TParkingEntry,
+  TScanPlateResultParams,
+  useCheckOut,
+  usePricingRules,
+  useSystemConfig,
+  VehicleImageComparison,
+  VehicleSearch
 } from '@/shared/features/gate';
-import { calculateParkingPricing, checkPlateMatch } from '@/shared/features/gate/utils';
 import { checkNfcCardUsage, getEntryById } from '@/shared/features/gate/apis/gate.api';
+import { calculateParkingPricing, checkPlateMatch } from '@/shared/features/gate/utils';
 import { useShiftStore } from '@/shared/features/shift';
 import { valibotResolver } from '@hookform/resolvers/valibot';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { MessageSquare as MessageSquareIcon } from 'lucide-react-native';
+import { CheckCircle2, Circle, Lock, MessageSquare as MessageSquareIcon } from 'lucide-react-native';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
@@ -44,6 +45,12 @@ export default function LostCardScreen() {
 
   const [isMonthly, setIsMonthly] = useState(false);
   const [monthlyInfo, setMonthlyInfo] = useState<{ customerName?: string, isExpired?: boolean } | null>(null);
+
+  // Additional Proof Photos for Lost Card
+  const [docPhoto, setDocPhoto] = useState<string | null>(null);
+  const [vehiclePhoto, setVehiclePhoto] = useState<string | null>(null);
+  const [personPhoto, setPersonPhoto] = useState<string | null>(null);
+  const [cancelMonthly, setCancelMonthly] = useState(true);
 
   const { control, handleSubmit, watch, setValue } = useForm<TCheckoutForm>({
     resolver: valibotResolver(checkoutSchema),
@@ -107,7 +114,11 @@ export default function LostCardScreen() {
         paymentMethod,
         isLostCard: true,
         lostCardReason: data.reason,
-        plateMatch
+        plateMatch,
+        photoDocument: docPhoto || '',
+        photoVehicle: vehiclePhoto || '',
+        photoPerson: personPhoto || '',
+        cancelMonthly: isMonthly && cancelMonthly,
       }, {
         onSuccess: () => {
           Alert.alert("Thành công", `Đã lưu lượt xe ra MẤT THẺ (${pricing.total.toLocaleString()}đ)`, [
@@ -130,7 +141,7 @@ export default function LostCardScreen() {
     );
   };
 
-  const isFormValid = !!reason && reason.trim().length > 0;
+  const isFormValid = !!reason && reason.trim().length > 0 && !!docPhoto && !!vehiclePhoto && !!personPhoto;
 
   return (
     <View className="flex-1 bg-[#F8FAFC]">
@@ -223,6 +234,56 @@ export default function LostCardScreen() {
                   )}
                 />
               </View>
+
+              {/* Security Proof Photos */}
+              <View className="mt-6 pt-6 border-t border-slate-100 gap-6">
+                <View className="flex-row items-center">
+                  <Text className="text-[12px] font-bold text-slate-500 uppercase">Hình ảnh minh chứng an ninh (Bắt buộc)</Text>
+                </View>
+
+                <PhotoCaptureCard 
+                  title="1. Giấy tờ xe"
+                  buttonLabel="giấy tờ"
+                  photo={docPhoto}
+                  onChange={setDocPhoto}
+                />
+
+                <PhotoCaptureCard 
+                  title="2. Hình ảnh xe (Tổng thể)"
+                  buttonLabel="hình xe"
+                  photo={vehiclePhoto}
+                  onChange={setVehiclePhoto}
+                />
+
+                <PhotoCaptureCard 
+                  title="3. Hình ảnh người lấy xe"
+                  buttonLabel="người lấy xe"
+                  photo={personPhoto}
+                  onChange={setPersonPhoto}
+                />
+              </View>
+
+              {/* Card Security Warning */}
+              <View className="mt-6 p-4 bg-amber-50 rounded-2xl border border-amber-100 flex-row">
+                <Lock size={20} color="#d97706" />
+                <View className="flex-1 ml-3">
+                  <Text className="text-amber-800 font-bold text-sm">Bảo mật thẻ</Text>
+                  <Text className="text-amber-700 text-[12px] leading-5">Hệ thống sẽ tự động CHỐT KHÓA mã thẻ này để tránh kẻ dối lợi dụng.</Text>
+                </View>
+              </View>
+
+              {isMonthly && (
+                <Pressable 
+                  onPress={() => setCancelMonthly(!cancelMonthly)}
+                  className="mt-4 p-4 bg-white rounded-2xl border border-slate-100 flex-row items-center"
+                >
+                  {cancelMonthly ? <CheckCircle2 size={24} color="#3b82f6" /> : <Circle size={24} color="#CBD5E1" />}
+                  <View className="ml-3 flex-1">
+                    <Text className="text-slate-800 font-bold text-sm">Hủy đăng ký thẻ tháng</Text>
+                    <Text className="text-slate-400 text-[11px]">Khách hàng cần đăng ký thẻ mới để tiếp tục sử dụng dịch vụ tháng.</Text>
+                  </View>
+                </Pressable>
+              )}
             </VehicleImageComparison>
 
             {/* Pricing */}

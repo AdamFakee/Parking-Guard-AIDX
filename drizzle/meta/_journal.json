@@ -57,6 +57,13 @@
       "when": 1774575560936,
       "tag": "0007_bouncy_blue_shield",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1774592326697,
+      "tag": "0008_sturdy_daimon_hellstrom",
+      "breakpoints": true
     }
   ]
 }
