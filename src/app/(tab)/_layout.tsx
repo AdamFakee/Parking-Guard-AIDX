@@ -22,7 +22,12 @@ export default function TabLayout() {
         })}
       />
       <Tabs.Screen name="cards" />
-      <Tabs.Screen name="settings" />
+      <Tabs.Screen 
+        name="settings" 
+        options={({ route }) => ({
+          tabBarStyle: getTabBarStyle(route, insets) as any,
+        })}
+      />
     </Tabs>
   );
 }

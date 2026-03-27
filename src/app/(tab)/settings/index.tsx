@@ -9,7 +9,8 @@ import {
   History,
   LogOut,
   Settings2,
-  User
+  User,
+  Users
 } from 'lucide-react-native';
 import React, { useRef } from 'react';
 import {
@@ -53,7 +54,7 @@ export default function SettingsScreen() {
 
   return (
     <View className="flex-1 bg-slate-50">
-      <AppHeader title="Cài đặt" />
+      <AppHeader title="Cài đặt" showLeftButton={false}/>
 
       <ScrollView className="flex-1 p-4">
         {/* User Profile Info */}
@@ -95,6 +96,13 @@ export default function SettingsScreen() {
               className="border-b border-slate-100 rounded-none h-14"
               leftIcon={Settings2}
               onPress={() => configModalRef.current?.open()}
+            />
+            <Button
+              label="Quản lý nhân viên"
+              variant="outline"
+              className="border-b border-slate-100 rounded-none h-14"
+              leftIcon={Users}
+              onPress={() => router.push('/settings/staff-management' as any)}
             />
             <Button
               label="Lịch sử ca làm"

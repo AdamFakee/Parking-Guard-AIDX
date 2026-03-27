@@ -3,3 +3,4 @@ export * from './use-verify-staff-pin';
 export * from './use-shift-history';
 export * from './use-start-shift';
 export * from './use-close-shift';
+export * from './use-staff-mutation';

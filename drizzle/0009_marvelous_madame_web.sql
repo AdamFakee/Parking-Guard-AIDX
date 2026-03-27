@@ -1,0 +1,1 @@
+ALTER TABLE `staff` ADD `is_deleted` integer DEFAULT false;

@@ -10,6 +10,7 @@ import m0005 from './0005_daffy_vermin.sql';
 import m0006 from './0006_grey_vapor.sql';
 import m0007 from './0007_bouncy_blue_shield.sql';
 import m0008 from './0008_sturdy_daimon_hellstrom.sql';
+import m0009 from './0009_marvelous_madame_web.sql';
 
   export default {
     journal,
@@ -22,7 +23,8 @@ m0004,
 m0005,
 m0006,
 m0007,
-m0008
+m0008,
+m0009
     }
   }
   
