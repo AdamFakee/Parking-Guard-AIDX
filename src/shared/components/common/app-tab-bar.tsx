@@ -1,15 +1,15 @@
-import React from 'react';
-import { View, Text, Pressable } from 'react-native';
-import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import { 
-  LucideLayoutGrid, 
-  LucideParkingCircle, 
-  LucideBarChart3, 
-  LucideCreditCard, 
-  LucideSettings 
-} from 'lucide-react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { cn } from '@/shared/utils';
+import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import {
+    LucideBarChart3,
+    LucideCreditCard,
+    LucideLayoutGrid,
+    LucideParkingCircle,
+    LucideSettings
+} from 'lucide-react-native';
+import React from 'react';
+import { Pressable, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export const AppTabBar = ({ state, descriptors, navigation }: BottomTabBarProps) => {
   const insets = useSafeAreaInsets();
@@ -47,6 +47,12 @@ export const AppTabBar = ({ state, descriptors, navigation }: BottomTabBarProps)
         return routeName;
     }
   };
+
+  const { options } = descriptors[state.routes[state.index].key] as any;
+
+  if (options.tabBarStyle?.display === 'none') {
+    return null;
+  }
 
   return (
     <View 
