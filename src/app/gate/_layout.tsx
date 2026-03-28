@@ -1,6 +1,25 @@
+import { LoadingIndicator } from '@/shared/components/ui/loading';
+import { useTensorflowStore } from '@/shared/store/useTensorflowStore';
 import { Stack } from 'expo-router';
+import { useEffect } from 'react';
+import { View } from 'react-native';
 
-export default function GateLayout() {
+function GateLayoutContent() {
+  const { status, loadModel } = useTensorflowStore();
+
+  useEffect(() => {
+    // Chỉ kích hoạt load khi vào khu vực gate
+    loadModel();
+  }, [loadModel]);
+
+  if (status === 'loading' || status === 'idle') {
+    return (
+      <View className="flex-1 items-center justify-center">
+        <LoadingIndicator />
+      </View>
+    );
+  }
+
   return (
     <Stack 
       screenOptions={{ 
@@ -13,5 +32,11 @@ export default function GateLayout() {
       <Stack.Screen name="check-out" />
       <Stack.Screen name="qr-payment" />
     </Stack>
+  );
+}
+
+export default function GateLayout() {
+  return (
+    <GateLayoutContent />
   );
 }

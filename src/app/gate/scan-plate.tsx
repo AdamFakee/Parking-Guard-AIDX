@@ -29,7 +29,7 @@ import {
 
 // Shared Components & Providers
 import { AppHeader } from '@/shared/components/ui';
-import { useTensorflow } from '@/shared/providers/TensorflowProvider';
+import { useTensorflowStore } from '@/shared/store/useTensorflowStore';
 
 // Local Feature Components
 import {
@@ -54,7 +54,7 @@ export default function ScanPlateScreen() {
   
   const camera = useRef<Camera>(null);
   const modalRef = useRef<ErrorModalRef>(null);
-  const model = useTensorflow();
+  const { model } = useTensorflowStore();
 
   const { 
     setDetectedPlate, setConfidence, setIsCorrected, setIsCapturing, 
@@ -106,8 +106,8 @@ export default function ScanPlateScreen() {
 
       // 3. Nhận diện vị trí bằng YOLOv8
       let box: BBox | null = null;
-      if (model.model) {
-        const out = await model.model.run([input]);
+      if (model) {
+        const out = await model.run([input]);
         const data = (out[0] as any) instanceof Float32Array 
           ? (out[0] as any) 
           : new Float32Array(Object.values(out[0] as any));
