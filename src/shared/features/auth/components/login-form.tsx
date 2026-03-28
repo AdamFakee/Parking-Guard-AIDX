@@ -3,9 +3,9 @@ import { ControlledInput } from '@/shared/components/ui/form/controlled-input';
 import { ControlledPasswordInput } from '@/shared/components/ui/form/controlled-password-input';
 import { COLORS } from '@/shared/constants';
 import { valibotResolver } from '@hookform/resolvers/valibot';
-import { Car, Lock, Phone } from 'lucide-react-native';
+import { Lock, Phone } from 'lucide-react-native';
 import { useForm } from 'react-hook-form';
-import { Pressable, Text, View } from 'react-native';
+import { Image, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useLogin } from '@/shared/features/auth/hooks/use-login';
@@ -40,19 +40,17 @@ export const LoginForm = () => {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-background-light" edges={['top']}>
-      <View className="flex-1 px-6 w-full max-w-[480px] self-center">
+    <SafeAreaView className="flex-1 bg-background-light" edges={['top', 'bottom']}>
+      <View className="flex-1 px-6 w-full max-w-[480px] self-center justify-center">
         {/* Top Branding Section */}
-        <View className="items-center justify-center pt-16 pb-10">
-          <View className="h-20 w-20 items-center justify-center rounded-2xl bg-primary shadow-lg shadow-primary/20">
-            <Car size={40} color="#ffffff" />
+        <View className="items-center justify-center pb-10">
+          <View className="h-20 w-20 items-center justify-center rounded-2xl bg-white shadow-lg shadow-primary/20 p-2 overflow-hidden">
+            <Image
+              source={require('@/assets/images/logo.png')}
+              className="h-full w-full"
+              resizeMode="contain"
+            />
           </View>
-          <Text className="text-screenName font-bold tracking-tight text-slate-900 mt-6">
-            ParkGuard
-          </Text>
-          <Text className="text-note1 text-slate-500 mt-1">
-            Hệ thống quản lý đỗ xe thông minh
-          </Text>
         </View>
 
         {/* Main Login Card */}
