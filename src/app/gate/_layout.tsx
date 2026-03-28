@@ -30,7 +30,9 @@ function GateLayoutContent() {
       <Stack.Screen name="scan-plate" />
       <Stack.Screen name="check-in" />
       <Stack.Screen name="check-out" />
-      <Stack.Screen name="qr-payment" />
+      <Stack.Screen name="entry-detail" />
+      <Stack.Screen name="lost-card" />
+      <Stack.Screen name="monthly-register" />
     </Stack>
   );
 }

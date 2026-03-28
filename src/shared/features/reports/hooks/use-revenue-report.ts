@@ -1,4 +1,4 @@
-import { reportApis } from '@/shared/features/reports';
+import { reportApis } from '../apis/reports.api';
 import { useInfiniteQuery } from '@tanstack/react-query';
 
 export const useRevenueReport = (startDate?: Date, endDate?: Date) => {

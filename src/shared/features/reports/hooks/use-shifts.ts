@@ -1,4 +1,4 @@
-import { reportApis } from '@/shared/features/reports';
+import { reportApis } from '../apis/reports.api';
 import { useQuery } from '@tanstack/react-query';
 
 export const useShifts = (limit = 20) => {
