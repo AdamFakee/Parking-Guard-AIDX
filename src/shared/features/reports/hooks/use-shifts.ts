@@ -1,9 +1,13 @@
 import { reportApis } from '../apis/reports.api';
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 
 export const useShifts = (limit = 20) => {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: ['reports', 'shifts', limit],
-    queryFn: () => reportApis.getShifts(limit),
+    queryFn: ({ pageParam = 0 }) => reportApis.getShifts(limit, pageParam as number),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) => {
+      return lastPage.length === limit ? allPages.length * limit : undefined;
+    },
   });
 };

@@ -109,10 +109,11 @@ export const reportApis = {
   /**
    * Lấy danh sách các ca làm việc gần đây
    */
-  async getShifts(limit = 20) {
+  async getShifts(limit = 20, offset = 0) {
     return await db.query.shifts.findMany({
       orderBy: [desc(shifts.startTime)],
       limit,
+      offset,
       with: {
         staff: true,
       },
