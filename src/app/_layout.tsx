@@ -4,7 +4,7 @@ import { onAppStateChange, queryClient, setupReactQueryMobile, useDevTools } fro
 import { useAuthStore } from '@/shared/store/useAuthStore'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { useMigrations } from 'drizzle-orm/expo-sqlite/migrator'
-import { Stack, useRootNavigationState, useRouter, useSegments } from 'expo-router'
+import { Redirect, Stack, useRootNavigationState, useRouter, useSegments } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { useEffect } from 'react'
 import { ErrorBoundary } from 'react-error-boundary'
@@ -23,48 +23,46 @@ SplashScreen.preventAutoHideAsync()
 
 setupReactQueryMobile()
 
-/**
- * Hook xử lý redirect dựa trên auth state.
- * Phải được gọi bên trong component con của NavigationContainer (Stack).
- */
 function useProtectedRoute() {
   const { isAuthenticated, _hasHydrated: authHydrated } = useAuthStore();
   const { currentShift, _hasHydrated: shiftHydrated } = useShiftStore();
   const segments = useSegments();
-  const router = useRouter();
+  const router = useRouter()
   const navigationState = useRootNavigationState();
 
-  useEffect(() => {
-    // Đợi navigation mount xong
-    if (!navigationState?.key) return;
-    if (!authHydrated || !shiftHydrated) return;
+  // Đợi navigation mount và hydration xong
+  if (!navigationState?.key || !authHydrated || !shiftHydrated) return null;
 
-    const inAuthGroup = segments[0] === '(auth)';
+  const inAuthGroup = segments[0] === '(auth)';
 
-    if (!isAuthenticated) {
-      // Chưa đăng nhập -> redirect tới login
-      if (!inAuthGroup) {
-        router.replace('/(auth)/login');
-      }
-    } else if (!currentShift) {
-      // Đã đăng nhập nhưng chưa chọn ca -> cho phép di chuyển trong nhóm (auth) (ngoại trừ login)
-      if (!inAuthGroup || segments[1] === 'login') {
-        router.replace('/(auth)/select-role');
-      }
-    } else {
-      // Đã đăng nhập + có ca -> thoát auth group nếu đang ở đó
-      if (inAuthGroup) {
-        router.replace('/');
-      }
+  if (!isAuthenticated) {
+    if (!inAuthGroup) {
+      return <Redirect href="/(auth)/login" />;
     }
-  }, [navigationState?.key, authHydrated, shiftHydrated, isAuthenticated, currentShift, segments, router]);
+  } else if (!currentShift) {
+    if (!inAuthGroup || segments[1] === 'login') {
+      router.replace('/(auth)/select-role')
+      return;
+    }
+  } else {
+    if (inAuthGroup) {
+      router.replace('/')
+      return;
+    }
+  }
+
+  return null;
 }
 
 function RootLayoutNav() {
-  useProtectedRoute();
+  const redirect = useProtectedRoute();
+
+  if (redirect) return redirect;
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
+    <Stack 
+      screenOptions={{ headerShown: false }} 
+    >
       <Stack.Screen name="(tab)" />
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="gate" />
@@ -77,11 +75,14 @@ export default function RootLayout() {
 
   const { success, error } = useMigrations(db, migrations);
 
+  const { _hasHydrated: authHydrated } = useAuthStore();
+  const { _hasHydrated: shiftHydrated } = useShiftStore();
+
   useEffect(() => {
-    if (success || error) {
+    if ((success || error) && authHydrated && shiftHydrated) {
       SplashScreen.hideAsync()
     }
-  }, [success, error])
+  }, [success, error, authHydrated, shiftHydrated])
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', onAppStateChange)
@@ -97,7 +98,7 @@ export default function RootLayout() {
     );
   }
 
-  if (!success) return null;
+  if (!success || !authHydrated || !shiftHydrated) return null;
 
   return (
     <SafeAreaProvider>
