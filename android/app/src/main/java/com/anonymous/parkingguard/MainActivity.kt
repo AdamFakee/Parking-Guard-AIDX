@@ -1,4 +1,4 @@
-package com.anonymous.learningexpo
+package com.anonymous.parkingguard
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build

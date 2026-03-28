@@ -1,20 +1,20 @@
 {
   "expo": {
-    "name": "learning-expo",
-    "slug": "learning-expo",
+    "name": "Parking Guard",
+    "slug": "parking-guard",
     "version": "1.0.0",
     "platforms": [
       "ios",
       "android"
     ],
     "orientation": "portrait",
-    "icon": "./src/assets/images/icon.png",
-    "scheme": "learningexpo",
+    "icon": "./src/assets/images/logo.png",
+    "scheme": "parking-guard",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.learningexpo",
+      "bundleIdentifier": "com.anonymous.parkingguard",
       "entitlements": {
         "com.apple.developer.networking.wifi-info": true,
         "com.apple.developer.nfc.readersession.formats": [
@@ -29,13 +29,13 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./src/assets/images/android-icon-foreground.png",
+        "foregroundImage": "./src/assets/images/logo.png",
         "backgroundImage": "./src/assets/images/android-icon-background.png",
-        "monochromeImage": "./src/assets/images/android-icon-monochrome.png"
+        "monochromeImage": "./src/assets/images/logo.png"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.learningexpo",
+      "package": "com.anonymous.parkingguard",
       "permissions": [
         "NFC",
         "CAMERA",
@@ -56,7 +56,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./src/assets/images/splash-icon.png",
+          "image": "./src/assets/images/logo.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff",

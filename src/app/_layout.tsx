@@ -15,8 +15,11 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { useShiftStore } from '@/shared/features/shift'
 import { SyncStatusIndicator } from '@/shared/features/sync'
 import { TensorflowProvider } from '@/shared/providers/TensorflowProvider'
+import * as SplashScreen from 'expo-splash-screen'
 import migrations from '../../drizzle/migrations.js'
 import './global.css'
+
+SplashScreen.preventAutoHideAsync()
 
 setupReactQueryMobile()
 
@@ -75,6 +78,12 @@ export default function RootLayout() {
   const { success, error } = useMigrations(db, migrations);
 
   useEffect(() => {
+    if (success || error) {
+      SplashScreen.hideAsync()
+    }
+  }, [success, error])
+
+  useEffect(() => {
     const subscription = AppState.addEventListener('change', onAppStateChange)
     return () => subscription.remove()
   }, [])
@@ -88,13 +97,7 @@ export default function RootLayout() {
     );
   }
 
-  if (!success) {
-    return (
-      <View className="flex-1 justify-center items-center">
-        <Text>Đang khởi tạo Database...</Text>
-      </View>
-    );
-  }
+  if (!success) return null;
 
   return (
     <SafeAreaProvider>

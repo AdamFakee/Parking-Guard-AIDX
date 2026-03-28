@@ -27,8 +27,8 @@
         <action android:name="android.intent.action.VIEW"/>
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
-        <data android:scheme="learningexpo"/>
-        <data android:scheme="exp+learning-expo"/>
+        <data android:scheme="parking-guard"/>
+        <data android:scheme="exp+parking-guard"/>
       </intent-filter>
     </activity>
   </application>

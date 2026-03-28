@@ -1,4 +1,4 @@
-package com.anonymous.learningexpo
+package com.anonymous.parkingguard
 
 import android.app.Application
 import android.content.res.Configuration
