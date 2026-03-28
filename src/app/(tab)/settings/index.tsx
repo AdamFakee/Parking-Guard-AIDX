@@ -4,8 +4,12 @@ import { useShiftStore } from '@/shared/features/shift';
 import { ShiftHistoryModal, ShiftHistoryModalRef } from '@/shared/features/shift/components';
 import { CloseShiftModal, CloseShiftModalRef } from '@/shared/features/shift/components/close-shift-modal';
 import { useAuthStore } from '@/shared/store';
+import { useSyncStore } from '@/shared/features/sync/store/use-sync-store';
+import { syncManager } from '@/shared/features/sync/services/sync-manager';
+import NetInfo from '@react-native-community/netinfo';
 import { useRouter } from 'expo-router';
 import {
+  CloudUpload,
   History,
   LogOut,
   Settings2,
@@ -27,6 +31,7 @@ export default function SettingsScreen() {
   const modalRef = useRef<CloseShiftModalRef>(null);
   const configModalRef = useRef<SystemConfigModalRef>(null);
   const historyModalRef = useRef<ShiftHistoryModalRef>(null);
+  const { isSyncing, lastSyncTime } = useSyncStore();
   
   const isStaff = currentShift?.role === 'staff';
   const openingCash = currentShift?.openingCash || 0;
@@ -50,6 +55,21 @@ export default function SettingsScreen() {
 
   const formatCurrency = (val: number) => {
     return val.toLocaleString('vi-VN') + ' đ';
+  };
+
+  const handleManualSync = async () => {
+    const state = await NetInfo.fetch();
+    if (!state.isConnected) {
+      Alert.alert('Không có mạng', 'Vui lòng kiểm tra kết nối internet để đồng bộ dữ liệu.');
+      return;
+    }
+
+    try {
+      await syncManager.startSync();
+      Alert.alert('Thành công', 'Dữ liệu đã được đồng bộ lên Google Drive.');
+    } catch (error) {
+      Alert.alert('Thất bại', 'Có lỗi xảy ra trong quá trình đồng bộ.');
+    }
   };
 
   return (
@@ -113,6 +133,24 @@ export default function SettingsScreen() {
             />
           </View>
         )}
+
+        {/* Sync Data Section */}
+        <View className="bg-white p-4 rounded-xl border border-slate-100 mb-4 shadow-sm">
+          <Text className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Dữ liệu & Đồng bộ</Text>
+          <Button
+            label={isSyncing ? "Đang đồng bộ..." : "Đồng bộ lên Google Drive"}
+            loading={isSyncing}
+            variant="primary"
+            leftIcon={CloudUpload}
+            onPress={handleManualSync}
+            className="h-12 rounded-lg"
+          />
+          {lastSyncTime && (
+            <Text className="text-center text-slate-400 text-xs mt-2">
+              Đồng bộ lần cuối: {lastSyncTime.toLocaleString()}
+            </Text>
+          )}
+        </View>
 
         {/* Actions */}
         <View className="bg-white rounded-xl border border-slate-100 overflow-hidden shadow-sm mb-6">

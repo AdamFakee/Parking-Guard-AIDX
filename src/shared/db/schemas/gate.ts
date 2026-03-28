@@ -52,6 +52,7 @@ export const parkingEntries = sqliteTable(
     isLostCard: integer('is_lost_card', { mode: 'boolean' }).default(false),
     lostCardReason: text('lost_card_reason'),
     synced: integer('synced', { mode: 'boolean' }).default(false),
+    syncAttempts: integer('sync_attempts').default(0),
   },
   (table) => ({
     plateIdx: index('idx_plate').on(table.plateText),
@@ -84,6 +85,7 @@ export const monthlySubscriptions = sqliteTable('monthly_subscriptions', {
   status: text('status', { enum: ['active', 'expired', 'canceled'] }).default('active'),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }),
   synced: integer('synced', { mode: 'boolean' }).default(false),
+  syncAttempts: integer('sync_attempts').default(0),
 })
 
 // --- BIÊN BẢN MẤT THẺ ---
@@ -102,5 +104,6 @@ export const lostCardReports = sqliteTable('lost_card_reports', {
   photoDocument: text('photo_document'),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }),
   synced: integer('synced', { mode: 'boolean' }).default(false),
+  syncAttempts: integer('sync_attempts').default(0),
 })
 
