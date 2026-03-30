@@ -23,8 +23,10 @@ import { useRouter } from 'expo-router';
 import { CheckCircle2 } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Alert, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
+
+import { toastQueue } from '@/shared/utils/toast.util';
 
 export default function MonthlyRegisterScreen() {
   const router = useRouter();
@@ -129,12 +131,20 @@ export default function MonthlyRegisterScreen() {
   const handleRegister = useCallback(async (data: MonthlyRegistrationForm) => {
     try {
       if (!photoCustomer || !photoVehicle) {
-        Alert.alert('Thiếu ảnh', 'Vui lòng chụp đầy đủ ảnh khách hàng & phương tiện');
+        toastQueue.show({
+          type: 'warning',
+          text1: 'Thiếu ảnh',
+          text2: 'Vui lòng chụp đầy đủ ảnh khách hàng & phương tiện',
+        });
         return;
       }
 
       if (!currentShift?.id) {
-        Alert.alert('Lỗi', 'Không tìm thấy thông tin ca trực');
+        toastQueue.show({
+          type: 'error',
+          text1: 'Lỗi',
+          text2: 'Không tìm thấy thông tin ca trực',
+        });
         return;
       }
 
@@ -145,22 +155,33 @@ export default function MonthlyRegisterScreen() {
         shiftId: currentShift.id,
       });
 
-      Alert.alert('Thành công', 'Đã đăng ký thẻ tháng thành công', [
-        { text: 'OK', onPress: () => router.back() }
-      ]);
+      toastQueue.show({
+        type: 'success',
+        text1: 'Thành công',
+        text2: 'Đã đăng ký thẻ tháng thành công',
+      });
+      router.back();
       reset();
       setPhotoCustomer(null);
       setPhotoVehicle(null);
       qrRef.current?.close();
     } catch (error) {
       console.error(error);
-      Alert.alert('Lỗi', 'Không thể đăng ký thẻ tháng');
+      toastQueue.show({
+        type: 'error',
+        text1: 'Lỗi',
+        text2: 'Không thể đăng ký thẻ tháng',
+      });
     }
   }, [photoCustomer, photoVehicle, currentShift, register, reset, router]);
 
   const onSave = async (data: MonthlyRegistrationForm) => {
     if (!photoCustomer || !photoVehicle) {
-      Alert.alert('Thiếu ảnh', 'Vui lòng chụp đầy đủ ảnh khách hàng & phương tiện');
+      toastQueue.show({
+        type: 'warning',
+        text1: 'Thiếu ảnh',
+        text2: 'Vui lòng chụp đầy đủ ảnh khách hàng & phương tiện',
+      });
       return;
     }
 

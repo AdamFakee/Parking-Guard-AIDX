@@ -14,6 +14,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+
+import { toastQueue } from '@/shared/utils/toast.util';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import * as v from 'valibot';
 import {
@@ -325,10 +327,18 @@ export const SystemConfigModal = forwardRef<SystemConfigModalRef>((_, ref) => {
         id: config.id,
         values: data,
       });
-      Alert.alert('Thành công', 'Cài đặt hệ thống đã được cập nhật.');
+      toastQueue.show({
+        type: 'success',
+        text1: 'Thành công',
+        text2: 'Cài đặt hệ thống đã được cập nhật.',
+      });
     } catch (error) {
       console.error(error);
-      Alert.alert('Lỗi', 'Không thể cập nhật cấu hình.');
+      toastQueue.show({
+        type: 'error',
+        text1: 'Lỗi',
+        text2: 'Không thể cập nhật cấu hình.',
+      });
     }
   };
 
@@ -344,7 +354,11 @@ export const SystemConfigModal = forwardRef<SystemConfigModalRef>((_, ref) => {
       resetRule();
     } catch (error) {
       console.error(error);
-      Alert.alert('Lỗi', 'Không thể lưu bảng giá.');
+      toastQueue.show({
+        type: 'error',
+        text1: 'Lỗi',
+        text2: 'Không thể lưu bảng giá.',
+      });
     }
   };
 

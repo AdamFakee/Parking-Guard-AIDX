@@ -12,13 +12,14 @@ import React, { forwardRef, useImperativeHandle, useMemo, useState } from 'react
 import { useForm } from 'react-hook-form';
 import {
   ActivityIndicator,
-  Alert,
   Modal,
   Pressable,
   ScrollView,
   Text,
   View
 } from 'react-native';
+
+import { toastQueue } from '@/shared/utils/toast.util';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import * as v from 'valibot';
 import { useCloseShift } from '../hooks';
@@ -89,7 +90,11 @@ export const CloseShiftModal = forwardRef<CloseShiftModalRef>((_, ref) => {
 
   const onConfirmExit = async (data: LogoutForm) => {
     if (!isBalanced && !data.reason?.trim()) {
-      Alert.alert('Thiếu thông tin', 'Vui lòng nhập lý do chênh lệch tiền mặt.');
+      toastQueue.show({
+        type: 'warning',
+        text1: 'Thiếu thông tin',
+        text2: 'Vui lòng nhập lý do chênh lệch tiền mặt.',
+      });
       return;
     }
 
@@ -111,7 +116,11 @@ export const CloseShiftModal = forwardRef<CloseShiftModalRef>((_, ref) => {
       router.replace('/auth/login' as any);
     } catch (err) {
       console.error(err);
-      Alert.alert('Lỗi', 'Không thể kết thúc ca làm. Vui lòng thử lại.');
+      toastQueue.show({
+        type: 'error',
+        text1: 'Lỗi',
+        text2: 'Không thể kết thúc ca làm. Vui lòng thử lại.',
+      });
     }
   };
 

@@ -7,8 +7,10 @@ import { useShiftStore } from '@/shared/features/shift';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { CheckCircle, Info } from 'lucide-react-native';
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { toastQueue } from '@/shared/utils/toast.util';
 
 export default function CheckInScreen() {
   const router = useRouter();
@@ -63,7 +65,11 @@ export default function CheckInScreen() {
 
   const handleConfirm = () => {
     if (!currentShift?.id) {
-      Alert.alert('Lỗi', 'Không tìm thấy thông tin ca trực');
+      toastQueue.show({
+        type: 'error',
+        text1: 'Lỗi',
+        text2: 'Không tìm thấy thông tin ca trực',
+      });
       return;
     }
 
@@ -76,12 +82,21 @@ export default function CheckInScreen() {
       photoIn2: plateImage || fullImage || '',
     }, {
       onSuccess: () => {
+        toastQueue.show({
+          type: 'success',
+          text1: 'Thành công',
+          text2: 'Đã hoàn tất check-in xe',
+        });
         router.dismissAll();
         router.replace('/');
       },
       onError: (error: any) => {
         console.log(error);
-        Alert.alert('Lỗi', 'Không thể lưu lượt vào: ' + error.message);
+        toastQueue.show({
+          type: 'error',
+          text1: 'Lỗi',
+          text2: 'Không thể lưu lượt vào: ' + error.message,
+        });
       }
     });
   };

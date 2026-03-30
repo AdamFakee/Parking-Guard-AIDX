@@ -1,20 +1,20 @@
 import { AppHeader, Button } from '@/shared/components/ui';
 import { COLORS, SHADOW } from '@/shared/constants/color.const';
-import { 
-  checkoutSchema, 
-  CheckoutFooter, 
-  MonthlyInfoBanner, 
-  PricingBreakdown, 
-  PREDEFINED_REASONS, 
-  QRPaymentModal, 
-  QRPaymentModalRef, 
-  TCheckoutForm, 
-  TParkingEntry, 
-  TScanPlateResultParams, 
-  useCheckOut, 
-  usePricingRules, 
-  useSystemConfig, 
-  VehicleImageComparison 
+import {
+  CheckoutFooter,
+  checkoutSchema,
+  MonthlyInfoBanner,
+  PREDEFINED_REASONS,
+  PricingBreakdown,
+  QRPaymentModal,
+  QRPaymentModalRef,
+  TCheckoutForm,
+  TParkingEntry,
+  TScanPlateResultParams,
+  useCheckOut,
+  usePricingRules,
+  useSystemConfig,
+  VehicleImageComparison
 } from '@/shared/features/gate';
 import { checkNfcCardUsage, getActiveEntryByCard, searchActiveEntries } from '@/shared/features/gate/apis/gate.api';
 import { SearchActiveEntryModal, SearchActiveEntryModalRef } from '@/shared/features/gate/components/search-active-entry-modal';
@@ -26,6 +26,8 @@ import { AlertCircle, AlertTriangle, CheckCircle2, Circle } from 'lucide-react-n
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { ActivityIndicator, Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+
+import { toastQueue } from '@/shared/utils/toast.util';
 
 
 export default function CheckOutScreen() {
@@ -73,7 +75,11 @@ export default function CheckOutScreen() {
       }
     } catch (error) {
       console.error('Load entry error:', error);
-      Alert.alert("Lỗi", "Không thể truy vấn thông tin thẻ");
+      toastQueue.show({
+        type: 'error',
+        text1: 'Lỗi',
+        text2: 'Không thể truy vấn thông tin thẻ',
+      });
     } finally {
       setLoading(false);
     }
@@ -188,7 +194,13 @@ export default function CheckOutScreen() {
 
   const onConfirmCheckout = (data: TCheckoutForm, paymentMethod: 'cash' | 'qr_transfer') => {
     if (!entry || !currentShift?.id) {
-      if (!currentShift?.id) Alert.alert("Lỗi", "Không tìm thấy phiên làm việc hiện tại");
+      if (!currentShift?.id) {
+        toastQueue.show({
+          type: 'error',
+          text1: 'Lỗi',
+          text2: 'Không tìm thấy phiên làm việc hiện tại',
+        });
+      }
       return;
     }
 
@@ -207,15 +219,22 @@ export default function CheckOutScreen() {
         plateMatch
       }, {
         onSuccess: () => {
-          Alert.alert("Thành công", `Đã lưu lượt xe ra (${pricing.total.toLocaleString()}đ)`, [
-            { text: "Hoàn tất", onPress: () => {
+          toastQueue.show({
+            type: 'success',
+            text1: 'Thành công',
+            text2: `Đã lưu lượt xe ra (${pricing.total.toLocaleString()}đ)`,
+            onHide: () => {
               router.dismissAll();
               router.replace('/');
-            }}
-          ]);
+            },
+          });
         },
         onError: (err) => {
-          Alert.alert("Lỗi", "Không thể lưu lượt xe: " + err.message);
+          toastQueue.show({
+            type: 'error',
+            text1: 'Lỗi',
+            text2: 'Không thể lưu lượt xe: ' + err.message,
+          });
         }
       });
     };

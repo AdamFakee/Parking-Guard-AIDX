@@ -11,7 +11,9 @@ import { ErrorBoundary } from 'react-error-boundary'
 import { AppState, Text, View } from 'react-native'
 import { KeyboardProvider } from 'react-native-keyboard-controller'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
+import Toast from 'react-native-toast-message'
 
+import { toastConfig } from '@/shared/components/providers'
 import { useShiftStore } from '@/shared/features/shift'
 import { SyncStatusIndicator } from '@/shared/features/sync'
 import * as SplashScreen from 'expo-splash-screen'
@@ -113,6 +115,8 @@ export default function RootLayout() {
             <RootLayoutNav />
             <SyncStatusIndicator />
           </ErrorBoundary>
+          
+          <Toast config={toastConfig} />
         </QueryClientProvider>
       </KeyboardProvider>
     </SafeAreaProvider>

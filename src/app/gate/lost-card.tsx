@@ -29,6 +29,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
+import { toastQueue } from '@/shared/utils/toast.util';
+
 export default function LostCardScreen() {
   const router = useRouter();
   const { plate: initialPlate, fullImage: outFullImage, plateImage: outPlateImage, entryId } = useLocalSearchParams<TScanPlateResultParams>();
@@ -98,7 +100,13 @@ export default function LostCardScreen() {
 
   const onConfirmCheckout = (data: TCheckoutForm, paymentMethod: 'cash' | 'qr_transfer') => {
     if (!entry || !currentShift?.id) {
-      if (!currentShift?.id) Alert.alert("Lỗi", "Không tìm thấy phiên làm việc hiện tại");
+      if (!currentShift?.id) {
+        toastQueue.show({
+          type: 'error',
+          text1: 'Lỗi',
+          text2: 'Không tìm thấy phiên làm việc hiện tại',
+        });
+      }
       return;
     }
 
@@ -129,7 +137,11 @@ export default function LostCardScreen() {
           ]);
         },
         onError: (err) => {
-          Alert.alert("Lỗi", "Không thể lưu lượt xe: " + err.message);
+          toastQueue.show({
+            type: 'error',
+            text1: 'Lỗi',
+            text2: 'Không thể lưu lượt xe: ' + err.message,
+          });
         }
       });
     };

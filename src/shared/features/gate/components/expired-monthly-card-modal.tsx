@@ -3,7 +3,9 @@ import { useShiftStore } from '@/shared/features/shift';
 import { useResponsive } from '@/shared/hooks';
 import { AlertCircle, CalendarClock, CreditCard, QrCode, RotateCcw, Smartphone, Wallet } from 'lucide-react-native';
 import React, { forwardRef, useImperativeHandle, useState } from 'react';
-import { Alert, Modal, Text, View } from 'react-native';
+import { Modal, Text, View } from 'react-native';
+
+import { toastQueue } from '@/shared/utils/toast.util';
 import { DEFAULT_MONTHLY_PRICE_MOTORBIKE } from '../const';
 import { useConvertCardToRegular, useRenewMonthlyCard, useSystemConfig } from '../hooks';
 import { QRPaymentContent } from './qr-payment-content';
@@ -55,7 +57,13 @@ export const ExpiredMonthlyCardModal = forwardRef<ExpiredMonthlyCardModalRef, Ex
 
   const handleConfirm = async () => {
     if (!tagUid || !currentShift?.id) {
-      if (!currentShift?.id) Alert.alert('Lỗi', 'Không tìm thấy ca trực hiện tại');
+      if (!currentShift?.id) {
+        toastQueue.show({
+          type: 'error',
+          text1: 'Lỗi',
+          text2: 'Không tìm thấy ca trực hiện tại',
+        });
+      }
       return;
     }
     
@@ -82,7 +90,11 @@ export const ExpiredMonthlyCardModal = forwardRef<ExpiredMonthlyCardModalRef, Ex
       }
       setIsVisible(false);
     } catch (error: any) {
-      Alert.alert('Thất bại', 'Đã có lỗi xảy ra: ' + error.message);
+      toastQueue.show({
+        type: 'error',
+        text1: 'Thất bại',
+        text2: 'Đã có lỗi xảy ra: ' + error.message,
+      });
     }
   };
 

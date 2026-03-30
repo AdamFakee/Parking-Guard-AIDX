@@ -7,7 +7,9 @@ import { useCardStore } from '@/shared/store/useCardStore';
 import { FlashList } from '@shopify/flash-list';
 import { CreditCard, Scan, Search } from 'lucide-react-native';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, RefreshControl, SafeAreaView, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, RefreshControl, SafeAreaView, ScrollView, Text, TextInput, View } from 'react-native';
+
+import { toastQueue } from '@/shared/utils/toast.util';
 import { useDebounce } from 'use-debounce';
 
 export default function CardsScreen() {
@@ -37,7 +39,11 @@ export default function CardsScreen() {
         setLocalSearch(tag.id);
       }
     } catch {
-      Alert.alert('Lỗi', 'Không thể đọc thẻ NFC');
+      toastQueue.show({
+        type: 'error',
+        text1: 'Lỗi',
+        text2: 'Không thể đọc thẻ NFC',
+      });
     }
   }, [readTag]);
 

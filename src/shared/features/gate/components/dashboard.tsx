@@ -8,7 +8,9 @@ import {
   LucideScanQrCode
 } from 'lucide-react-native';
 import React, { useCallback, useEffect } from 'react';
-import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
+
+import { toastQueue } from '@/shared/utils/toast.util';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -105,9 +107,17 @@ export const Dashboard = () => {
     router.push(`/gate/scan-plate?${params.toString()}` as any);
     
     if (type === 'renew') {
-      Alert.alert('Thành công', 'Đã gia hạn thẻ tháng thành công.');
+      toastQueue.show({
+        type: 'success',
+        text1: 'Thành công',
+        text2: 'Đã gia hạn thẻ tháng thành công.',
+      });
     } else {
-      Alert.alert('Thành công', 'Đã chuyển thành thẻ lượt.');
+      toastQueue.show({
+        type: 'success',
+        text1: 'Thành công',
+        text2: 'Đã chuyển thành thẻ lượt.',
+      });
     }
   };
 

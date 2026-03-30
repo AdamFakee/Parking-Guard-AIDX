@@ -24,6 +24,8 @@ import {
   View
 } from 'react-native';
 
+import { toastQueue } from '@/shared/utils/toast.util';
+
 export default function SettingsScreen() {
   const router = useRouter();
   const logoutAuth = useAuthStore((state) => state.logout);
@@ -60,15 +62,27 @@ export default function SettingsScreen() {
   const handleManualSync = async () => {
     const state = await NetInfo.fetch();
     if (!state.isConnected) {
-      Alert.alert('Không có mạng', 'Vui lòng kiểm tra kết nối internet để đồng bộ dữ liệu.');
+      toastQueue.show({
+        type: 'warning',
+        text1: 'Không có mạng',
+        text2: 'Vui lòng kiểm tra kết nối internet để đồng bộ dữ liệu.',
+      });
       return;
     }
 
     try {
       await syncManager.startSync();
-      Alert.alert('Thành công', 'Dữ liệu đã được đồng bộ lên Google Drive.');
+      toastQueue.show({
+        type: 'success',
+        text1: 'Thành công',
+        text2: 'Dữ liệu đã được đồng bộ lên Google Drive.',
+      });
     } catch (error) {
-      Alert.alert('Thất bại', 'Có lỗi xảy ra trong quá trình đồng bộ.');
+      toastQueue.show({
+        type: 'error',
+        text1: 'Thất bại',
+        text2: 'Có lỗi xảy ra trong quá trình đồng bộ.',
+      });
     }
   };
 

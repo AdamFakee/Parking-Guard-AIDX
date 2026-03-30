@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Alert } from 'react-native';
 import { addStaff, deleteStaff, restoreStaff, updateStaff } from '../apis/staff.api';
+
+import { toastQueue } from '@/shared/utils/toast.util';
 
 interface UseStaffMutationProps {
     onSuccess?: () => void;
@@ -16,7 +17,11 @@ export const useStaffMutation = ({ onSuccess }: UseStaffMutationProps = {}) => {
       onSuccess?.();
     },
     onError: (error: any) => {
-      Alert.alert('Lỗi', error.message || 'Không thể thêm nhân viên');
+      toastQueue.show({
+        type: 'error',
+        text1: 'Lỗi',
+        text2: error.message || 'Không thể thêm nhân viên',
+      });
     }
   });
 
@@ -27,7 +32,11 @@ export const useStaffMutation = ({ onSuccess }: UseStaffMutationProps = {}) => {
       onSuccess?.();
     },
     onError: (error: any) => {
-      Alert.alert('Lỗi', error.message || 'Không thể cập nhật nhân viên');
+      toastQueue.show({
+        type: 'error',
+        text1: 'Lỗi',
+        text2: error.message || 'Không thể cập nhật nhân viên',
+      });
     }
   });
 
@@ -37,7 +46,11 @@ export const useStaffMutation = ({ onSuccess }: UseStaffMutationProps = {}) => {
       queryClient.invalidateQueries({ queryKey: ['all staffs'] });
     },
     onError: (error: any) => {
-      Alert.alert('Lỗi', error.message || 'Không thể xóa nhân viên');
+      toastQueue.show({
+        type: 'error',
+        text1: 'Lỗi',
+        text2: error.message || 'Không thể xóa nhân viên',
+      });
     }
   });
 
@@ -47,7 +60,11 @@ export const useStaffMutation = ({ onSuccess }: UseStaffMutationProps = {}) => {
       queryClient.invalidateQueries({ queryKey: ['all staffs'] });
     },
     onError: (error: any) => {
-      Alert.alert('Lỗi', error.message || 'Không thể khôi phục nhân viên');
+      toastQueue.show({
+        type: 'error',
+        text1: 'Lỗi',
+        text2: error.message || 'Không thể khôi phục nhân viên',
+      });
     }
   });
 

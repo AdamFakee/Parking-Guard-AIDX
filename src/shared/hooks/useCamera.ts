@@ -1,13 +1,18 @@
 import * as ImagePicker from 'expo-image-picker';
 import { useCallback } from 'react';
-import { Alert } from 'react-native';
+
+import { toastQueue } from '@/shared/utils/toast.util';
 
 export function useCamera() {
   const takePhoto = useCallback(async (options?: ImagePicker.ImagePickerOptions) => {
     try {
       const { status: cameraStatus } = await ImagePicker.requestCameraPermissionsAsync();
       if (cameraStatus !== 'granted') {
-        Alert.alert('Quyền truy cập', 'Vui lòng cấp quyền camera để chụp ảnh');
+        toastQueue.show({
+          type: 'warning',
+          text1: 'Quyền truy cập',
+          text2: 'Vui lòng cấp quyền camera để chụp ảnh',
+        });
         return null;
       }
 
@@ -23,7 +28,11 @@ export function useCamera() {
       return null;
     } catch (error) {
       console.error('Camera Error:', error);
-      Alert.alert('Lỗi', 'Không thể mở camera hoặc xử lý ảnh');
+      toastQueue.show({
+        type: 'error',
+        text1: 'Lỗi',
+        text2: 'Không thể mở camera hoặc xử lý ảnh',
+      });
       return null;
     }
   }, []);
