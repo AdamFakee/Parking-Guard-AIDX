@@ -1,7 +1,7 @@
 import { db } from '@/shared/db';
 import * as schema from '@/shared/db/schemas';
-import { and, desc, eq, isNull, like, sql } from 'drizzle-orm';
 import { ensurePermanentImage } from '@/shared/utils/file.utils';
+import { and, desc, eq, isNull, like, sql } from 'drizzle-orm';
 import { DEFAULT_RENEWAL_MONTHS } from '../const';
 import { TSearchVehicleType, TVehicleType } from '../types/gate.types';
 
@@ -433,6 +433,25 @@ export const checkNfcCardUsage = async (uid: string) => {
     status: 'existing', 
     cardType: card.cardType,
     cardStatus: card.status,
-    registeredPlate: card.registeredPlate
   };
 };
+
+export const getEntriesByCard = async ({ 
+  cardUid, 
+  page = 1, 
+  limit = 10 
+}: { 
+  cardUid: string; 
+  page?: number; 
+  limit?: number;
+}) => {
+  const offset = (page) ? (page - 1) * limit : 0;
+  return await db
+    .select()
+    .from(schema.parkingEntries)
+    .where(eq(schema.parkingEntries.cardUid, cardUid))
+    .orderBy(desc(schema.parkingEntries.entryTime))
+    .limit(limit)
+    .offset(offset);
+};
+

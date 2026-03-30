@@ -49,3 +49,8 @@ export const monthlySubscriptionsRelations = relations(monthlySubscriptions, ({ 
     references: [shifts.id],
   }),
 }));
+
+export const nfcCardRelations = relations(nfcCards, ({ many }) => ({
+  subscriptions: many(monthlySubscriptions),
+  entries: many(parkingEntries),
+}));
