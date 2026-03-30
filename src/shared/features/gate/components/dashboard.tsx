@@ -7,65 +7,20 @@ import {
   LucideArrowRightToLine,
   LucideScanQrCode
 } from 'lucide-react-native';
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { toastQueue } from '@/shared/utils/toast.util';
-import Animated, {
-  Easing,
-  useAnimatedStyle,
-  useSharedValue,
-  withDelay,
-  withRepeat,
-  withTiming
-} from 'react-native-reanimated';
 import { getCardStatus } from '../apis/gate.api';
 import { useDashboardStats, useNfc } from '../hooks';
 import { ExpiredMonthlyCardModal, ExpiredMonthlyCardModalRef } from './expired-monthly-card-modal';
 
-const PulseRing = ({ delay = 0 }: { delay?: number }) => {
-  const scale = useSharedValue(0.33);
-  const opacity = useSharedValue(0.8);
-
-  useEffect(() => {
-    scale.value = withDelay(
-      delay,
-      withRepeat(
-        withTiming(2.2, { duration: 3000, easing: Easing.out(Easing.quad) }),
-        -1,
-        false
-      )
-    );
-    opacity.value = withDelay(
-      delay,
-      withRepeat(
-        withTiming(0, { duration: 3000, easing: Easing.out(Easing.quad) }),
-        -1,
-        false
-      )
-    );
-  }, [delay, opacity, scale]);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    opacity: opacity.value,
-  }));
-
-  return (
-    <Animated.View 
-      style={animatedStyle}
-      className="absolute size-[240px] border-2 border-blue-500 rounded-full"
-    />
-  );
-};
 
 export const Dashboard = () => {
   const { currentShift } = useShiftStore();
   const { data: stats } = useDashboardStats(currentShift?.id);
   const { startListening, stopListening, isReading } = useNfc();
   const router = useRouter();
-
-  const coreScale = useSharedValue(0.95);
   
   const modalRef = React.useRef<ExpiredMonthlyCardModalRef>(null);
 
@@ -125,17 +80,6 @@ export const Dashboard = () => {
     // Left for manual click fallback but functionally replaced by auto-scan
   };
 
-  useEffect(() => {
-    coreScale.value = withRepeat(
-      withTiming(1, { duration: 1000, easing: Easing.inOut(Easing.ease) }),
-      -1,
-      true
-    );
-  }, [coreScale]);
-
-  const coreAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: coreScale.value }],
-  }));
 
   // Format currency
   const formatCurrency = (val: number) => {
@@ -218,18 +162,13 @@ export const Dashboard = () => {
             disabled={isReading}
             className="size-[100px] items-center justify-center relative"
           >
-            <PulseRing delay={0} />
-            <PulseRing delay={1000} />
-            <PulseRing delay={2000} />
-            
-            <Animated.View 
-              style={coreAnimatedStyle}
+            <View 
               className={`z-10 size-44 rounded-full bg-white shadow-xl shadow-blue-500/20 items-center justify-center border border-blue-500/10 ${isReading ? 'opacity-50' : ''}`}
             >
               <View className="size-32 bg-blue-500 rounded-full items-center justify-center shadow-lg">
                 <LucideScanQrCode size={64} color="white" strokeWidth={1.5} />
               </View>
-            </Animated.View>
+            </View>
           </Pressable>
 
           <View className="mt-8 items-center">
