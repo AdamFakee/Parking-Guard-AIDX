@@ -208,7 +208,10 @@ export default function CheckOutScreen() {
       }, {
         onSuccess: () => {
           Alert.alert("Thành công", `Đã lưu lượt xe ra (${pricing.total.toLocaleString()}đ)`, [
-            { text: "Hoàn tất", onPress: () => router.dismissAll() }
+            { text: "Hoàn tất", onPress: () => {
+              router.dismissAll();
+              router.replace('/');
+            }}
           ]);
         },
         onError: (err) => {

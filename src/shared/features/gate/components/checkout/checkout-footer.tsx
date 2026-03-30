@@ -3,6 +3,7 @@ import { SHADOW } from '@/shared/constants/color.const';
 import { CheckCircle2, Wallet } from 'lucide-react-native';
 import React from 'react';
 import { Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface Props {
   isFormValid: boolean;
@@ -12,10 +13,12 @@ interface Props {
 }
 
 export const CheckoutFooter = ({ isFormValid, isPending, onCashPress, onQRPress }: Props) => {
+  const insets = useSafeAreaInsets();
+  
   return (
     <View 
-      className="bg-white p-4 pb-10 border-t border-[#F1F5F9] absolute bottom-0 left-0 right-0"
-      style={SHADOW.up}
+      className="bg-white p-4 border-t border-[#F1F5F9] absolute bottom-0 left-0 right-0"
+      style={[SHADOW.up, { paddingBottom: Math.max(insets.bottom, 24) }]}
     >
       <Text className="text-center text-[10px] font-bold text-slate-400 mb-4 uppercase tracking-[1.5px]">Phương thức thanh toán</Text>
       <View className="flex-row gap-3">

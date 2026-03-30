@@ -1,21 +1,22 @@
-import { AppHeader } from '@/shared/components/ui';
+import { AppHeader, Button } from '@/shared/components/ui';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { LucidePlay, LucideUser } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
   Text,
   TextInput,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStartShift } from '../hooks';
 import { useShiftStore } from '../store';
 
 export const StartShift = () => {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { staffId, name, role } = useLocalSearchParams<{ staffId: string; name: string; role: 'admin' | 'staff' }>();
   const [openingCash, setOpeningCash] = useState('');
   
@@ -79,16 +80,16 @@ export const StartShift = () => {
             Tiền mặt đầu ca <Text className="text-red-500 font-normal">(bắt buộc)</Text>
           </Text>
           <View className="relative">
-            <View className="absolute inset-y-0 left-0 pl-5 items-center justify-center z-10">
-              <Text className="text-2xl font-bold text-orange-500">₫</Text>
-            </View>
             <TextInput
-              className="w-full pl-12 pr-4 py-5 bg-white border-2 border-slate-200 rounded-2xl focus:border-green-500 text-3xl font-bold text-slate-800"
+              className="w-full px-4 py-5 bg-white border-2 border-slate-200 rounded-2xl focus:border-green-500 text-3xl font-bold text-slate-800"
               placeholder="0"
               keyboardType="numeric"
               value={openingCash}
               onChangeText={setOpeningCash}
             />
+            <View className="absolute inset-y-0 right-0 pr-5 items-center justify-center z-10">
+              <Text className="text-2xl font-bold text-orange-500">VND</Text>
+            </View>
           </View>
           <Text className="text-xs text-slate-500 italic ml-1">
             * Nhập tổng số tiền mặt hiện có tại quầy khi bắt đầu
@@ -97,17 +98,19 @@ export const StartShift = () => {
       </ScrollView>
 
       {/* Bottom Action */}
-      <View className="p-4 bg-white/80 border-t border-slate-100">
-        <Pressable 
+      <View 
+        style={{ paddingBottom: Math.max(insets.bottom, 20) }}
+        className="p-4 bg-white/80 border-t border-slate-100"
+      >
+        <Button
+          label="BẮT ĐẦU CA TRỰC"
           onPress={handleStartShift}
           disabled={isButtonDisabled}
-          className={`w-full py-4 bg-green-500 rounded-2xl items-center justify-center flex-row shadow-lg ${isButtonDisabled ? 'opacity-50 grayscale' : ''}`}
-        >
-          <LucidePlay size={20} color="white" fill="white" className="mr-2" />
-          <Text className="text-white font-black text-lg tracking-wider">
-            BẮT ĐẦU CA TRỰC
-          </Text>
-        </Pressable>
+          loading={isPending}
+          leftIcon={LucidePlay}
+          className="h-16"
+          textClassName="text-white font-black text-lg"
+        />
       </View>
     </KeyboardAvoidingView>
   );

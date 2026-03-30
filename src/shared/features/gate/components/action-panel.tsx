@@ -2,6 +2,7 @@ import { Button } from '@/shared/components/ui';
 import { Camera as CameraIcon, RotateCcw } from 'lucide-react-native';
 import React, { memo } from 'react';
 import { Pressable, useColorScheme, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useScanPlateStore } from '../store';
 
 interface ActionPanelProps {
@@ -17,9 +18,13 @@ export const ActionPanel = memo(({ onCapture, onConfirm }: ActionPanelProps) => 
   const { isCapturing, reset } = useScanPlateStore();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const insets = useSafeAreaInsets();
   
   return (
-    <View className={`${isDark ? 'bg-[#0f172a]' : 'bg-white'} rounded-t-[32px] p-6 gap-4 shadow-xl`}>
+    <View 
+      style={{ paddingBottom: Math.max(insets.bottom, 24) }}
+      className={`${isDark ? 'bg-[#0f172a]' : 'bg-white'} rounded-t-[32px] p-6 pb-2 gap-4 shadow-xl`}
+    >
       <View className="flex-row gap-3">
         <Button 
           label="Chụp"

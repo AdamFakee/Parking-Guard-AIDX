@@ -66,7 +66,7 @@ export const ErrorModal = memo(forwardRef<ErrorModalRef, ErrorModalProps>(({ onC
         <KeyboardAwareScrollView
           bottomOffset={0}
           className={`w-full ${isDark ? 'bg-[#1e293b]' : 'bg-white'} rounded-3xl`}
-          style={{ maxHeight: '80%' }}
+          style={{ maxHeight: '55%' }}
           contentContainerStyle={{ flexGrow: 0 }}
           showsVerticalScrollIndicator={false}
         >

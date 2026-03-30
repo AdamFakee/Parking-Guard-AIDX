@@ -3,10 +3,10 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { LucideDelete } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import {
-  Image,
-  Pressable,
-  Text,
-  View,
+    Image,
+    Pressable,
+    Text,
+    View,
 } from 'react-native';
 import { useVerifyStaffPin } from '../hooks';
 

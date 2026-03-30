@@ -2,6 +2,7 @@ import { Button } from '@/shared/components/ui';
 import { Check, X } from 'lucide-react-native';
 import React, { forwardRef, useImperativeHandle, useState } from 'react';
 import { Modal, Pressable, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { QRPaymentContent } from './qr-payment-content';
 
 export interface QRPaymentModalRef {
@@ -15,6 +16,7 @@ interface Props {
 }
 
 export const QRPaymentModal = forwardRef<QRPaymentModalRef, Props>(({ onConfirm, isPending }, ref) => {
+  const insets = useSafeAreaInsets();
   const [isVisible, setIsVisible] = useState(false);
   const [amount, setAmount] = useState(0);
   const [content, setContent] = useState('');
@@ -40,7 +42,10 @@ export const QRPaymentModal = forwardRef<QRPaymentModalRef, Props>(({ onConfirm,
       onRequestClose={() => !isPending && setIsVisible(false)}
     >
       <View className="flex-1 bg-black/50 justify-end">
-        <View className="bg-slate-50 dark:bg-slate-900 rounded-t-[44px] pt-4 px-6 pb-8 h-[92%] border-t border-slate-200 dark:border-slate-800">
+        <View 
+          style={{ paddingBottom: Math.max(insets.bottom, 32) }}
+          className="bg-slate-50 dark:bg-slate-900 rounded-t-[44px] pt-4 px-6 h-[92%] border-t border-slate-200 dark:border-slate-800"
+        >
           {/* Header */}
           <View className="flex-row justify-between items-center py-5 border-b border-slate-200 dark:border-slate-800 mb-6">
             <View className="flex-row items-center gap-3">

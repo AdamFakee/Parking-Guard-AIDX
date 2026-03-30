@@ -2,12 +2,12 @@ import { AppHeader } from '@/shared/components/ui';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import {
-  ActivityIndicator,
-  Image,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
+    ActivityIndicator,
+    Image,
+    Pressable,
+    ScrollView,
+    Text,
+    View,
 } from 'react-native';
 import { useGetAllStaff } from '../hooks';
 

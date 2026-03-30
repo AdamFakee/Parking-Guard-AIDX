@@ -8,9 +8,11 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { CheckCircle, Info } from 'lucide-react-native';
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, ScrollView, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function CheckInScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { tagUid, fullImage, plateImage, plate } = useLocalSearchParams<TScanPlateResultParams>();
   const { currentShift } = useShiftStore();
   const { mutate: performCheckIn, isPending } = useCheckIn();
@@ -133,14 +135,24 @@ export default function CheckInScreen() {
         onSave={handleSavePlate}
       />
 
-      <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: 16, backgroundColor: 'rgba(255, 255, 255, 0.95)', borderTopWidth: 1, borderTopColor: '#f1f5f9', paddingBottom: 32 , height: 100}}>
+      <View style={{ 
+        position: 'absolute', 
+        bottom: 0, 
+        left: 0, 
+        right: 0, 
+        padding: 16, 
+        backgroundColor: 'rgba(255, 255, 255, 0.95)', 
+        borderTopWidth: 1, 
+        borderTopColor: '#f1f5f9', 
+        paddingBottom: Math.max(insets.bottom, 16) 
+      }}>
         <Button 
           label="XÁC NHẬN XE VÀO"
           onPress={handleConfirm}
           loading={isPending}
           disabled={isPending}
           leftIcon={CheckCircle}
-          className="flex-1"
+          className="flex-1 h-15"
           textClassName="text-lg font-bold"
         />
       </View>
