@@ -1,13 +1,16 @@
 import { Button, ControlledInput } from '@/shared/components/ui';
 import { cn } from '@/shared/utils';
 import { valibotResolver } from '@hookform/resolvers/valibot';
-import { Bike, Car, Edit2, Moon, Plus, Save, Settings2, Sun, Trash2, X, Zap } from 'lucide-react-native';
+import { Bike, Car, Check, ChevronRight, Edit2, Moon, Plus, Save, Search, Settings2, Sun, Trash2, X, Zap } from 'lucide-react-native';
 import React, { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
-import { useController, useForm } from 'react-hook-form';
+import { useController, useForm, useWatch } from 'react-hook-form';
 import {
   Alert,
+  FlatList,
+  Image,
   Modal,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -26,6 +29,7 @@ import {
   useUpdatePricingRule,
   useUpdateSystemConfig
 } from '../hooks';
+import banksData from '@/assets/bank.json';
 
 // --- SCHEMAS ---
 
@@ -153,6 +157,92 @@ export interface SystemConfigModalRef {
   close: () => void;
 }
 
+export interface BankPickerRef {
+  open: () => void;
+  close: () => void;
+}
+
+// --- SUB-COMPONENTS ---
+
+const BankPicker = forwardRef<BankPickerRef, { 
+  onSelect: (bankName: string) => void,
+  selectedValue?: string 
+}>(({ onSelect, selectedValue }, ref) => {
+  const [visible, setVisible] = useState(false);
+  const [bankSearch, setBankSearch] = useState('');
+
+  useImperativeHandle(ref, () => ({
+    open: () => setVisible(true),
+    close: () => setVisible(false),
+  }));
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="fade"
+      transparent={true}
+      onRequestClose={() => setVisible(false)}
+    >
+      <View className="flex-1 bg-black/50 justify-center p-6">
+        <View className="bg-white rounded-3xl max-h-[80%] overflow-hidden">
+          <View className="p-4 border-b border-slate-100 flex-row items-center gap-3">
+            <Search size={20} color="#64748B" />
+            <TextInput
+              placeholder="Tìm kiếm ngân hàng..."
+              className="flex-1 text-slate-900 font-medium py-2"
+              value={bankSearch}
+              onChangeText={setBankSearch}
+              autoFocus
+            />
+            <TouchableOpacity onPress={() => setVisible(false)}>
+              <X size={20} color="#64748B" />
+            </TouchableOpacity>
+          </View>
+          <FlatList
+            data={banksData.filter(b => 
+              b.shortName.toLowerCase().includes(bankSearch.toLowerCase()) || 
+              b.name.toLowerCase().includes(bankSearch.toLowerCase())
+            )}
+            keyExtractor={(item) => String(item.id)}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                onPress={() => {
+                  onSelect(item.shortName);
+                  setVisible(false);
+                  setBankSearch('');
+                }}
+                className="flex-row items-center p-4 border-b border-slate-50 gap-3"
+              >
+                <View className="size-10 bg-slate-50 rounded-lg items-center justify-center overflow-hidden border border-slate-100">
+                  <Image source={{ uri: item.logo }} className="size-8" resizeMode="contain" />
+                </View>
+                <View className="flex-1">
+                  <Text className="text-slate-900 font-bold">{item.shortName}</Text>
+                  <Text className="text-slate-500 text-[10px]" numberOfLines={1}>{item.name}</Text>
+                </View>
+                {selectedValue === item.shortName && (
+                  <Check size={20} color="#3B82F6" />
+                )}
+              </TouchableOpacity>
+            )}
+            removeClippedSubviews={true}
+            initialNumToRender={15}
+            maxToRenderPerBatch={20}
+            windowSize={10}
+            ListEmptyComponent={
+              <View className="p-10 items-center">
+                <Text className="text-slate-400">Không tìm thấy ngân hàng</Text>
+              </View>
+            }
+          />
+        </View>
+      </View>
+    </Modal>
+  );
+});
+
+BankPicker.displayName = 'BankPicker';
+
 // --- MODAL COMPONENT ---
 
 export const SystemConfigModal = forwardRef<SystemConfigModalRef>((_, ref) => {
@@ -160,6 +250,7 @@ export const SystemConfigModal = forwardRef<SystemConfigModalRef>((_, ref) => {
   const [activeTab, setActiveTab] = useState<'general' | 'pricing'>('general');
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [editingRule, setEditingRule] = useState<any>(null);
+  const bankPickerRef = React.useRef<BankPickerRef>(null);
   
   const { data: config } = useSystemConfig();
   const { mutateAsync: updateConfig, isPending: configPending } = useUpdateSystemConfig();
@@ -169,7 +260,7 @@ export const SystemConfigModal = forwardRef<SystemConfigModalRef>((_, ref) => {
   const { mutateAsync: updateRule } = useUpdatePricingRule();
   const { mutateAsync: deleteRule } = useDeletePricingRule();
 
-  const { control, handleSubmit: handleConfigSubmit, reset: resetConfig } = useForm<ConfigForm>({
+  const { control, handleSubmit: handleConfigSubmit, reset: resetConfig, setValue } = useForm<ConfigForm>({
     resolver: valibotResolver(ConfigSchema as any),
     defaultValues: {
       lotName: '',
@@ -183,6 +274,11 @@ export const SystemConfigModal = forwardRef<SystemConfigModalRef>((_, ref) => {
       monthlyPriceCar: DEFAULT_MONTHLY_PRICE_CAR as any,
       monthlyPriceEbike: DEFAULT_MONTHLY_PRICE_EBIKE as any,
     },
+  });
+
+  const watchBankName = useWatch({ 
+    control, 
+    name: 'bankName' 
   });
 
   const { control: ruleControl, handleSubmit: handleRuleSubmit, reset: resetRule } = useForm<PricingRuleForm>({
@@ -272,7 +368,8 @@ export const SystemConfigModal = forwardRef<SystemConfigModalRef>((_, ref) => {
   };
 
   return (
-    <Modal
+    <>
+      <Modal
       visible={visible}
       animationType="slide"
       transparent={true}
@@ -367,12 +464,18 @@ export const SystemConfigModal = forwardRef<SystemConfigModalRef>((_, ref) => {
                 <View className="gap-4 mt-4">
                   <Text className="text-sm font-bold text-slate-400 uppercase tracking-widest pl-1">Thông tin thanh toán QR</Text>
                   
-                  <ControlledInput
-                    control={control}
-                    name="bankName"
-                    label="Ngân hàng"
-                    placeholder="Ví dụ: Vietcombank, MBBank..."
-                  />
+                  <View className="gap-2">
+                    <Text className="text-note1 text-slate-500 font-medium ml-1">Ngân hàng</Text>
+                    <TouchableOpacity 
+                      onPress={() => bankPickerRef.current?.open()}
+                      className="bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 flex-row items-center justify-between"
+                    >
+                      <Text className={cn("text-slate-900 font-medium", !watchBankName && "text-slate-400 font-normal")}>
+                        {watchBankName || "Chọn ngân hàng..."}
+                      </Text>
+                      <ChevronRight size={20} color="#94A3B8" />
+                    </TouchableOpacity>
+                  </View>
 
                   <ControlledInput
                     control={control}
@@ -611,7 +714,14 @@ export const SystemConfigModal = forwardRef<SystemConfigModalRef>((_, ref) => {
         </View>
       </View>
     </Modal>
-  );
+
+    <BankPicker 
+      ref={bankPickerRef}
+      selectedValue={watchBankName}
+      onSelect={(val) => setValue('bankName', val)}
+    />
+  </>
+);
 });
 
 SystemConfigModal.displayName = 'SystemConfigModal';

@@ -1,6 +1,26 @@
-import React from 'react';
-import { Image, ScrollView, Text, View } from 'react-native';
+import banksData from '@/assets/bank.json';
+import { Button } from '@/shared/components/ui';
+import { useRouter } from 'expo-router';
+import { Settings2 } from 'lucide-react-native';
+import React, { useMemo } from 'react';
+import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
+import QRCode from 'react-native-qrcode-svg';
+import { generateVietQROffline } from '@/shared/utils/vietqr';
 import { useSystemConfig } from '../hooks';
+
+const normalizeText = (text?: string) => {
+  if (!text) return '';
+  return text
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase()
+    .replace(/Đ/g, 'D');
+};
+
+const getBankBin = (name: string) => {
+  if (!name) return;
+  return banksData.find(b => b.shortName === name || b.name === name)?.bin;
+};
 
 interface QRPaymentContentProps {
   amount: number;
@@ -9,7 +29,59 @@ interface QRPaymentContentProps {
 }
 
 export const QRPaymentContent: React.FC<QRPaymentContentProps> = ({ amount, content, isExpiredRenew }) => {
-  const { data: sysConfig } = useSystemConfig();
+  const router = useRouter();
+  const { data: sysConfig, isLoading } = useSystemConfig();
+
+  const qrString = useMemo(() => {
+    if (!sysConfig || (!sysConfig?.bankName || !sysConfig?.accountNumber || !sysConfig?.accountName)) return '';
+
+    let bankBin = getBankBin(sysConfig.bankName);
+    
+    if(!bankBin) return '';
+
+    try {
+      return generateVietQROffline({
+        bin: bankBin,
+        stk: sysConfig.accountNumber!,
+        amount: amount,
+        desc: content,
+        accountName: normalizeText(sysConfig.accountName!),
+      });
+    } catch (error) {
+      console.error('VietQR Gen Error:', error);
+      return '';
+    }
+  }, [sysConfig, amount, content]);
+
+  if (isLoading) {
+    return (
+      <View className="flex-1 items-center justify-center p-10">
+        <ActivityIndicator color="#3B82F6" size="large" />
+      </View>
+    );
+  }
+
+  if (!sysConfig?.bankName || !sysConfig?.accountNumber || !sysConfig?.accountName) {
+    return (
+      <View className="flex-1 items-center justify-center p-6 gap-6">
+        <View className="size-20 bg-amber-50 rounded-full items-center justify-center border-4 border-white shadow-sm">
+          <Settings2 size={40} color="#F59E0B" />
+        </View>
+        <View className="gap-2 items-center">
+          <Text className="text-xl font-black text-slate-900 text-center">Thiếu thông tin ngân hàng</Text>
+          <Text className="text-slate-500 text-center leading-5 px-4">
+            Hệ thống cần thông tin Ngân hàng, Số tài khoản và Tên chủ khoản để tạo mã VietQR tự động.
+          </Text>
+        </View>
+        <Button 
+          label="Thiết lập ngay" 
+          onPress={() => router.push('/settings' as any)} 
+          className="w-full mt-4 h-14"
+          leftIcon={Settings2}
+        />
+      </View>
+    );
+  }
 
   return (
     <View className="flex-1">
@@ -34,12 +106,16 @@ export const QRPaymentContent: React.FC<QRPaymentContentProps> = ({ amount, cont
 
         {/* QR Code Container - High Visibility */}
         <View className="items-center bg-white dark:bg-slate-800 p-8 rounded-[40px] shadow-sm border border-slate-100 dark:border-slate-800 mb-6 w-full">
-          <View className="w-full aspect-square relative bg-white rounded-2xl overflow-hidden p-2">
-            <Image 
-              source={{ uri: sysConfig?.qrImageUrl || 'https://api.vietqr.io/image/970436-123456789-f5Xy6z.jpg' }} 
-              className="w-full h-full" 
-              resizeMode="contain" 
-            />
+          <View className="w-full aspect-square relative bg-white rounded-2xl overflow-hidden p-2 items-center justify-center">
+            {qrString ? (
+              <QRCode 
+                value={qrString} 
+                size={240} 
+                quietZone={10}
+              />
+            ) : (
+              <ActivityIndicator color="#3B82F6" size="large" />
+            )}
           </View>
           <View className="mt-6 items-center">
             <Text className="text-[11px] text-slate-900 dark:text-white font-black uppercase tracking-[1.5px]">Quét mã VietQR</Text>
