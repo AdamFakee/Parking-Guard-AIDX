@@ -1,5 +1,6 @@
 import banksData from '@/assets/bank.json';
 import { Button } from '@/shared/components/ui';
+import { COLORS } from '@/shared/constants/color.const';
 import { useRouter } from 'expo-router';
 import { Settings2 } from 'lucide-react-native';
 import React, { useMemo } from 'react';
@@ -26,9 +27,16 @@ interface QRPaymentContentProps {
   amount: number;
   content: string;
   isExpiredRenew?: boolean;
+  /** Nhúng trong sheet cha — không bọc ScrollView lồng */
+  embedded?: boolean;
 }
 
-export const QRPaymentContent: React.FC<QRPaymentContentProps> = ({ amount, content, isExpiredRenew }) => {
+export const QRPaymentContent: React.FC<QRPaymentContentProps> = ({
+  amount,
+  content,
+  isExpiredRenew,
+  embedded = false,
+}) => {
   const router = useRouter();
   const { data: sysConfig, isLoading } = useSystemConfig();
 
@@ -83,59 +91,63 @@ export const QRPaymentContent: React.FC<QRPaymentContentProps> = ({ amount, cont
     );
   }
 
-  return (
-    <View className="flex-1">
-      {/* Warning Card - Subtle but Clear */}
+  const body = (
+    <>
       {isExpiredRenew && (
-        <View className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/50 p-3 rounded-2xl mb-4 flex-row items-center gap-2">
-           <View className="size-2 bg-amber-500 rounded-full" />
-           <Text className="text-[10px] text-amber-700 dark:text-amber-500 font-bold uppercase tracking-tight">Vui lòng kiểm tra kỹ số tiền & nội dung chuyển khoản</Text>
+        <View className="bg-amber-50 border border-amber-200 p-3 rounded-2xl mb-4 flex-row items-center gap-2">
+          <View className="size-2 bg-amber-500 rounded-full" />
+          <Text className="text-[10px] text-amber-700 font-bold uppercase tracking-tight">
+            Kiểm tra kỹ số tiền & nội dung CK
+          </Text>
         </View>
       )}
 
-      <ScrollView 
-        className="flex-1" 
+      <View className="bg-blue-50 rounded-2xl p-5 mb-4 items-center border border-blue-100">
+        <Text className="text-[10px] text-brand-blue mb-1 uppercase tracking-widest font-black">
+          Số tiền thanh toán
+        </Text>
+        <Text className="text-3xl font-mono font-black text-brand-blue">
+          {amount.toLocaleString('vi-VN')}đ
+        </Text>
+      </View>
+
+      <View className="items-center bg-white p-5 rounded-3xl border border-slate-100 mb-4 w-full">
+        <View className="bg-white rounded-2xl overflow-hidden p-2 items-center justify-center">
+          {qrString ? (
+            <QRCode value={qrString} size={embedded ? 200 : 240} quietZone={10} />
+          ) : (
+            <ActivityIndicator color={COLORS.brand.blue} size="large" />
+          )}
+        </View>
+        <Text className="text-[11px] text-slate-900 font-black uppercase tracking-widest mt-4">
+          Quét mã VietQR
+        </Text>
+        <Text className="text-[9px] text-slate-400 mt-1 font-bold text-center">
+          Hỗ trợ app ngân hàng & ví điện tử
+        </Text>
+      </View>
+
+      <View className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+        <DetailRow label="Ngân hàng" value={sysConfig?.bankName || '—'} />
+        <DetailRow label="Chủ tài khoản" value={sysConfig?.accountName || '—'} isUpper />
+        <DetailRow label="Số tài khoản" value={sysConfig?.accountNumber || '—'} isMono />
+        <DetailRow label="Nội dung" value={content} isMono isHighlighted showBorder={false} />
+      </View>
+    </>
+  );
+
+  if (embedded) {
+    return <View>{body}</View>;
+  }
+
+  return (
+    <View className="flex-1">
+      <ScrollView
+        className="flex-1"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 24 }}
       >
-        {/* Amount Section - Make it Pop! */}
-        <View className="bg-white dark:bg-slate-800 rounded-3xl p-6 mb-5 items-center border border-slate-100 dark:border-slate-800 shadow-sm">
-          <Text className="text-[10px] text-slate-400 dark:text-slate-500 mb-2 uppercase tracking-[2px] font-black text-center">Số tiền thanh toán</Text>
-          <Text className="text-4xl font-mono font-black text-blue-600 dark:text-blue-400 tracking-tighter">{amount.toLocaleString()}đ</Text>
-        </View>
-
-        {/* QR Code Container - High Visibility */}
-        <View className="items-center bg-white dark:bg-slate-800 p-8 rounded-[40px] shadow-sm border border-slate-100 dark:border-slate-800 mb-6 w-full">
-          <View className="w-full aspect-square relative bg-white rounded-2xl overflow-hidden p-2 items-center justify-center">
-            {qrString ? (
-              <QRCode 
-                value={qrString} 
-                size={240} 
-                quietZone={10}
-              />
-            ) : (
-              <ActivityIndicator color="#3B82F6" size="large" />
-            )}
-          </View>
-          <View className="mt-6 items-center">
-            <Text className="text-[11px] text-slate-900 dark:text-white font-black uppercase tracking-[1.5px]">Quét mã VietQR</Text>
-            <Text className="text-[9px] text-slate-400 dark:text-slate-500 mt-1 font-bold">Hỗ trợ tất cả ứng dụng ngân hàng & ví điện tử</Text>
-          </View>
-        </View>
-
-        {/* Bank Detail Section - Clean Table Layout */}
-        <View className="bg-slate-50 dark:bg-slate-800/50 rounded-[28px] p-5 border border-slate-100 dark:border-slate-800 space-y-3">
-          <DetailRow label="Ngân hàng" value={sysConfig?.bankName || 'Vietcombank'} />
-          <DetailRow label="Chủ tài khoản" value={sysConfig?.accountName || 'CONG TY PARKING'} isUpper />
-          <DetailRow label="Số tài khoản" value={sysConfig?.accountNumber || '1234567890'} isMono />
-          <DetailRow 
-            label="Nội dung" 
-            value={content} 
-            isMono 
-            isHighlighted 
-            showBorder={false} 
-          />
-        </View>
+        {body}
       </ScrollView>
     </View>
   );

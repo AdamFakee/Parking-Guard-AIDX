@@ -2,6 +2,9 @@ import { TVehicleType } from '../types/gate.types';
 
 export const DEFAULT_RENEWAL_MONTHS = 1;
 
+/** OCR dump dài hơn → coi là sai, không hiển thị full */
+export const MAX_PLATE_CHARS = 15;
+
 export const VEHICLE_TYPE_LABELS: Record<TVehicleType, string> = {
   car: 'Ô tô',
   motorbike: 'Xe máy',

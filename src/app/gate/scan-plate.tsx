@@ -1,8 +1,6 @@
-import TextRecognition from '@react-native-ml-kit/text-recognition';
 import { useIsFocused } from '@react-navigation/native';
-import * as ImageManipulator from 'expo-image-manipulator';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   StyleSheet,
@@ -16,171 +14,229 @@ import {
   useCameraPermission,
 } from 'react-native-vision-camera';
 
-// Internal Store & Utils
-import { useScanPlateStore } from '@/shared/features/gate/store/scan-plate.store';
-import { BBox, TScanPlateResultParams } from '@/shared/features/gate/types';
-import { checkLegitPlate, mlKitResultToOcrLines, processOcrResult } from '@/shared/features/gate/utils';
-import {
-  calcLetterbox,
-  getCropRect,
-  parseYoloOutput,
-  preprocessImage
-} from '@/shared/features/gate/utils/yolo-processing.utils';
-
-// Shared Components & Providers
 import { AppHeader } from '@/shared/components/ui';
-import { useTensorflowStore } from '@/shared/store/useTensorflowStore';
-
-// Local Feature Components
+import { COLORS } from '@/shared/constants/color.const';
 import {
   ActionPanel,
   CameraOverlay,
   ErrorModal,
-  ErrorModalRef
+  ErrorModalRef,
+  InConfirmModal,
+  InConfirmPayload,
+  OutConfirmPayload,
+  OutConfirmSheet,
+  recognizePlateFromPhoto,
+  useGateSessionStore,
+  useScanPlateStore,
 } from '@/shared/features/gate';
+import { useTensorflowStore } from '@/shared/store/useTensorflowStore';
+import { toastQueue } from '@/shared/utils/toast.util';
+
+type SessionMode = 'in' | 'out';
 
 /**
- * Màn hình nhận diện biển số xe (License Plate Recognition)
+ * Cam sau Dashboard:
+ * - NFC: mode + tagUid
+ * - Nút không thẻ: mode + noCard
+ * Chụp tay → bottom sheet. Không NFC trên màn này.
  */
 export default function ScanPlateScreen() {
   const router = useRouter();
   const isFocused = useIsFocused();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
-  
-  const { mode, tagUid } = useLocalSearchParams<{ mode: string; tagUid: string }>();
+
+  const params = useLocalSearchParams<{
+    mode?: string;
+    tagUid?: string;
+    noCard?: string;
+  }>();
+  const storeSession = useGateSessionStore((s) => s.session);
+
+  const sessionMode: SessionMode =
+    storeSession?.mode ?? (params.mode === 'out' ? 'out' : 'in');
+  const sessionTagUid =
+    storeSession?.tagUid ||
+    (params.tagUid && params.tagUid !== 'undefined' ? params.tagUid : undefined);
+  const noCard =
+    storeSession?.noCard === true ||
+    params.noCard === '1' ||
+    !sessionTagUid;
+
   const { hasPermission, requestPermission } = useCameraPermission();
   const device = useCameraDevice('back');
-  
   const camera = useRef<Camera>(null);
-  const modalRef = useRef<ErrorModalRef>(null);
+  const errorModalRef = useRef<ErrorModalRef>(null);
   const { model } = useTensorflowStore();
 
-  const { 
-    setDetectedPlate, setConfidence, setIsCorrected, setIsCapturing, 
-    setCapturedFull, setCapturedCrop
+  const {
+    setDetectedPlate,
+    setConfidence,
+    setIsCorrected,
+    setIsCapturing,
+    setCapturedFull,
+    setCapturedCrop,
+    reset: resetScanStore,
   } = useScanPlateStore();
 
-  useEffect(() => { 
-    if (!hasPermission) requestPermission(); 
+  const [overlayOpen, setOverlayOpen] = useState(false);
+  const [inPayload, setInPayload] = useState<InConfirmPayload | null>(null);
+  const [outPayload, setOutPayload] = useState<OutConfirmPayload | null>(null);
+  const capturingRef = useRef(false);
+
+  useEffect(() => {
+    if (!hasPermission) requestPermission();
   }, [hasPermission, requestPermission]);
 
-  const handleConfirm = useCallback(() => {
-    const { detectedPlate, capturedFull, capturedCrop } = useScanPlateStore.getState();
+  // Chỉ back nếu không có session store VÀ không có params (mở nhầm)
+  useEffect(() => {
+    if (storeSession || params.mode || params.tagUid || params.noCard) return;
+    const t = setTimeout(() => {
+      const again = useGateSessionStore.getState().session;
+      if (again) return;
+      router.replace('/');
+    }, 1500);
+    return () => clearTimeout(t);
+  }, [storeSession, params.mode, params.tagUid, params.noCard, router]);
 
-    const results: TScanPlateResultParams = {
+  const openSheet = useCallback(() => {
+    const { detectedPlate, capturedFull, capturedCrop } = useScanPlateStore.getState();
+    const base = {
       plate: detectedPlate,
       fullImage: capturedFull || '',
-      plateImage: capturedCrop || '',
-      tagUid: (tagUid && tagUid !== 'undefined') ? tagUid : undefined
+      plateImage: capturedCrop,
+      tagUid: sessionTagUid,
+      noCard: noCard || !sessionTagUid,
     };
+    setOverlayOpen(true);
+    if (sessionMode === 'out') {
+      setOutPayload(base);
+      setInPayload(null);
+    } else {
+      setInPayload(base);
+      setOutPayload(null);
+    }
+  }, [sessionMode, sessionTagUid, noCard]);
 
-    const params = new URLSearchParams(results as any);
-    const path = mode === 'out' ? '/gate/check-out' : '/gate/check-in';
-    router.push(`${path}?${params.toString()}` as any);
-  }, [mode, tagUid, router]);
+  const handleCapture = useCallback(async () => {
+    if (!camera.current || capturingRef.current || overlayOpen) return;
 
-  const handleCapture = async () => {
-    const state = useScanPlateStore.getState();
-    if (!camera.current || state.isCapturing) return;
-
+    capturingRef.current = true;
     setIsCapturing(true);
-    
-    // Reset kết quả cũ để đảm bảo không bị hiển thị nhầm
     setDetectedPlate('');
     setConfidence(0);
     setIsCorrected(false);
     setCapturedCrop(null);
 
     try {
-      // 1. Chụp ảnh
       const photo = await camera.current.takeSnapshot();
       const rawUri = photo.path.startsWith('file://') ? photo.path : `file://${photo.path}`;
-      
-      // CẬP NHẬT ẢNH GỐC NGAY: Để lỡ có lỗi thì Modal vẫn hiện ảnh vừa chụp
       setCapturedFull(rawUri);
 
-      // 2. Xử lý Letterbox cho YOLO
-      const lb = calcLetterbox(photo.width, photo.height);
-      const input = await preprocessImage(rawUri, lb);
+      const result = await recognizePlateFromPhoto({
+        photoUri: rawUri,
+        width: photo.width,
+        height: photo.height,
+        model,
+      });
 
-      // 3. Nhận diện vị trí bằng YOLOv8
-      let box: BBox | null = null;
-      if (model) {
-        const out = await model.run([input]);
-        const data = (out[0] as any) instanceof Float32Array 
-          ? (out[0] as any) 
-          : new Float32Array(Object.values(out[0] as any));
-        box = parseYoloOutput(data);
-      }
+      setCapturedFull(result.fullImage);
+      setCapturedCrop(result.plateImage);
+      setDetectedPlate(result.plate);
+      setConfidence(result.confidence);
+      setIsCorrected(result.isCorrected);
 
-      // 4. Cắt ảnh biển số (nếu tìm thấy)
-      let cropUri: string | null = null;
-      let targetUri = rawUri;
-      let targetH = photo.height;
-
-      if (box) {
-        const rect = getCropRect(box, lb, photo.width, photo.height);
-        const res = await ImageManipulator.manipulateAsync(rawUri, [{ crop: rect }], { format: ImageManipulator.SaveFormat.JPEG });
-        cropUri = res.uri.startsWith('file://') ? res.uri : `file://${res.uri}`;
-        setCapturedCrop(cropUri); 
-        targetUri = cropUri;
-        targetH = rect.height;
-      }
-
-      // 5. OCR
-      const result = await TextRecognition.recognize(targetUri);
-      
-      if (result?.blocks?.length) {
-        const lines = mlKitResultToOcrLines(result as any);
-        const { text, confidence, isCorrected: corrected } = processOcrResult(lines, targetH);
-        
-        setDetectedPlate(text);
-        setConfidence(confidence);
-        setIsCorrected(corrected);
-
-        if (checkLegitPlate(text)) {
-          handleConfirm();
-        } else {
-          modalRef.current?.open();
-        }
+      if (result.isLegit) {
+        openSheet();
       } else {
-        setDetectedPlate('');
-        modalRef.current?.open();
+        errorModalRef.current?.open();
       }
     } catch (e) {
-      console.error('[ScalePlate] Capture Error:', e);
+      console.error('[ScanPlate] Capture Error:', e);
+      toastQueue.show({ type: 'error', text1: 'Lỗi', text2: 'Không chụp được ảnh' });
     } finally {
+      capturingRef.current = false;
       setIsCapturing(false);
     }
-  };
+  }, [
+    overlayOpen,
+    model,
+    openSheet,
+    setCapturedCrop,
+    setCapturedFull,
+    setConfidence,
+    setDetectedPlate,
+    setIsCapturing,
+    setIsCorrected,
+  ]);
+
+  const finishAndGoHome = useCallback(() => {
+    // visible=false trước — tất cả modal đã dùng animationType="none"
+    setOverlayOpen(false);
+    setInPayload(null);
+    setOutPayload(null);
+    resetScanStore();
+    // setTimeout(0): nhường 1 event-loop tick để React flush visible=false
+    // xuống native bridge TRƯỚC khi unmount toàn bộ screen
+    setTimeout(() => {
+      useGateSessionStore.getState().clearSession();
+      router.replace('/');
+    }, 0);
+  }, [resetScanStore, router]);
+
+  const stayOnCamera = useCallback(() => {
+    setOverlayOpen(false);
+    setInPayload(null);
+    setOutPayload(null);
+    resetScanStore();
+  }, [resetScanStore]);
 
   if (!hasPermission || !device) {
     return (
       <View className="flex-1 bg-black items-center justify-center gap-3">
-        <ActivityIndicator color="#22c55e" size="large" />
-        <Text className="text-[#94a3b8] text-sm">Khởi tạo Camera...</Text>
+        <ActivityIndicator color={COLORS.brand.blue} size="large" />
+        <Text className="text-slate-400 text-sm">Khởi tạo Camera...</Text>
       </View>
     );
   }
 
+  const title =
+    sessionMode === 'out'
+      ? noCard
+        ? 'Cổng · XE RA · không thẻ'
+        : 'Cổng · XE RA'
+      : noCard
+        ? 'Cổng · XE VÀO · không thẻ'
+        : 'Cổng · XE VÀO';
+
   return (
     <View className="flex-1 bg-black">
-      <Camera 
-        ref={camera} 
-        style={StyleSheet.absoluteFill} 
-        device={device} 
-        isActive={isFocused} 
-        photo={true} 
+      <Camera
+        ref={camera}
+        style={StyleSheet.absoluteFill}
+        device={device}
+        isActive={isFocused && !overlayOpen}
+        photo={true}
       />
-      <View className="flex-1">
-        <AppHeader title="Chụp biển số" variant={isDark ? 'dark' : 'surface'} showBorderBottom={false} />
+      <View className="flex-1" pointerEvents={overlayOpen ? 'none' : 'auto'}>
+        <AppHeader title={title} variant={isDark ? 'dark' : 'surface'} showBorderBottom={false} />
         <CameraOverlay />
-        <ActionPanel onCapture={handleCapture} onConfirm={handleConfirm} />
+        <ActionPanel onCapture={handleCapture} onConfirm={openSheet} />
       </View>
-      <ErrorModal 
-        ref={modalRef} 
-        onConfirm={handleConfirm} 
+
+      <ErrorModal ref={errorModalRef} onConfirm={openSheet} />
+
+      <InConfirmModal
+        visible={overlayOpen && !!inPayload}
+        payload={inPayload}
+        onDismiss={stayOnCamera}
+        onSuccess={finishAndGoHome}
+      />
+      <OutConfirmSheet
+        visible={overlayOpen && !!outPayload}
+        payload={outPayload}
+        onDismiss={stayOnCamera}
+        onSuccess={finishAndGoHome}
       />
     </View>
   );

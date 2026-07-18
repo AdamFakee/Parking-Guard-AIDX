@@ -259,6 +259,19 @@ export const searchActiveEntries = async (plate: string, onlyNoUid: boolean = fa
     .orderBy(desc(schema.parkingEntries.entryTime));
 };
 
+/** Biển đã có lượt IN (so khớp clean A–Z0–9) — chặn vào trùng */
+export const findActiveInYardByPlate = async (plate: string) => {
+  const cleaned = plate.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (!cleaned) return null;
+
+  const rows = await searchActiveEntries(cleaned);
+  const match = rows.find(
+    (e) =>
+      (e.plateText || '').toUpperCase().replace(/[^A-Z0-9]/g, '') === cleaned
+  );
+  return match ?? null;
+};
+
 export const getActiveEntryByCard = async (cardUid: string) => {
   const [entry] = await db
     .select()

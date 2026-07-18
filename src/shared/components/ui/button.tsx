@@ -55,25 +55,34 @@ export const Button = ({
 
       {...props}
     >
-      {loading ? (
-        <LoadingIndicator 
-          color={iconColor} 
-        />
-      ) : (
-        <>
-          {LeftIcon && <View className="mr-3"><LeftIcon size={iconSize} color={iconColor} /></View>}
-          <Text
-            className={cn(
-              'text-center text-button font-semibold',
-              variant === 'primary' ? 'text-slate-100' : 'text-brand-blue',
-              textClassName
-            )}
-          >
-            {label}
-          </Text>
-          {RightIcon && <View className="ml-3"><RightIcon size={iconSize} color={iconColor} /></View>}
-        </>
-      )}
+{/* Một child ổn định — tránh Fabric addViewAt khi swap loading */}
+      <View className="flex-row items-center justify-center">
+        {loading ? (
+          <LoadingIndicator color={iconColor} />
+        ) : (
+          <>
+            {LeftIcon ? (
+              <View className="mr-3">
+                <LeftIcon size={iconSize} color={iconColor} />
+              </View>
+            ) : null}
+            <Text
+              className={cn(
+                'text-center text-button font-semibold',
+                variant === 'primary' ? 'text-slate-100' : 'text-brand-blue',
+                textClassName
+              )}
+            >
+              {label}
+            </Text>
+            {RightIcon ? (
+              <View className="ml-3">
+                <RightIcon size={iconSize} color={iconColor} />
+              </View>
+            ) : null}
+          </>
+        )}
+      </View>
     </Pressable>
   );
 };

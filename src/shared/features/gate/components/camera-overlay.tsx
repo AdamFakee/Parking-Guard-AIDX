@@ -19,14 +19,14 @@ export const CameraOverlay = memo(() => {
         className="h-56 border border-white/30 rounded-3xl overflow-hidden relative"
       >
         {/* Góc bo góc (Corners) */}
-        <View className="absolute w-6 h-6 border-t-4 border-l-4 border-[#22c55e] top-[-2px] left-[-2px]" />
-        <View className="absolute w-6 h-6 border-t-4 border-r-4 border-[#22c55e] top-[-2px] right-[-2px]" />
-        <View className="absolute w-6 h-6 border-b-4 border-l-4 border-[#22c55e] bottom-[-2px] left-[-2px]" />
-        <View className="absolute w-6 h-6 border-b-4 border-r-4 border-[#22c55e] bottom-[-2px] right-[-2px]" />
+        <View className="absolute w-6 h-6 border-t-4 border-l-4 border-brand-blue top-[-2px] left-[-2px]" />
+        <View className="absolute w-6 h-6 border-t-4 border-r-4 border-brand-blue top-[-2px] right-[-2px]" />
+        <View className="absolute w-6 h-6 border-b-4 border-l-4 border-brand-blue bottom-[-2px] left-[-2px]" />
+        <View className="absolute w-6 h-6 border-b-4 border-r-4 border-brand-blue bottom-[-2px] right-[-2px]" />
         
         {isCapturing && (
           <View className="absolute inset-0 bg-black/60 items-center justify-center gap-3">
-            <ActivityIndicator color="#22c55e" size="large" />
+            <ActivityIndicator color="#3B82F6" size="large" />
             <Text className="text-white text-sm font-bold tracking-wide">ĐANG PHÂN TÍCH...</Text>
           </View>
         )}

@@ -106,6 +106,11 @@ export function formatDisplayPlate(plate: string | null | undefined): string {
   return `${nn}-${xx}-${serial}`;
 }
 
+/** Chỉ A–Z0–9, cắt maxLen — state / DB (không format gạch) */
+export function cleanPlateInput(raw: string, maxLen = 15): string {
+  return raw.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, maxLen);
+}
+
 // ─────────────────────────────────────────────────────────────
 // 1. check_legit_plate  →  checkLegitPlate
 // ─────────────────────────────────────────────────────────────

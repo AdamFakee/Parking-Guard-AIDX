@@ -1,13 +1,23 @@
 import { Button } from '@/shared/components/ui';
+import { COLORS } from '@/shared/constants/color.const';
 import { valibotResolver } from '@hookform/resolvers/valibot';
-import { Check, X } from 'lucide-react-native';
+import { X } from 'lucide-react-native';
 import React, { forwardRef, memo, useImperativeHandle, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { Image, Modal, Platform, Pressable, Text, TextInput, useColorScheme, View } from 'react-native';
+import {
+  Image,
+  Modal,
+  Platform,
+  Pressable,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
+import { MAX_PLATE_CHARS } from '../const/parking.const';
 import { PlateForm, PlateSchema } from '../schemas';
 import { useScanPlateStore } from '../store';
-import { formatDisplayPlate } from '../utils';
+import { cleanPlateInput, formatDisplayPlate } from '../utils';
 
 export interface ErrorModalRef {
   open: () => void;
@@ -18,142 +28,181 @@ interface ErrorModalProps {
   onConfirm: () => void;
 }
 
-export const ErrorModal = memo(forwardRef<ErrorModalRef, ErrorModalProps>(({ onConfirm }, ref) => {
-  const [visible, setVisible] = useState(false);
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  
-  const { detectedPlate, capturedCrop: plateImage, setDetectedPlate } = useScanPlateStore();
+/**
+ * Popup giữa màn — bấm nền ngoài = dismiss.
+ */
+export const ErrorModal = memo(
+  forwardRef<ErrorModalRef, ErrorModalProps>(({ onConfirm }, ref) => {
+    const [visible, setVisible] = useState(false);
+    const [ocrTooLong, setOcrTooLong] = useState(false);
 
-  const { control, handleSubmit, reset, formState: { errors } } = useForm<PlateForm>({
-    resolver: valibotResolver(PlateSchema),
-    defaultValues: {
-      value: '',
-    },
-  });
+    const { detectedPlate, capturedCrop: plateImage, capturedFull, setDetectedPlate } =
+      useScanPlateStore();
 
-  useImperativeHandle(ref, () => ({
-    open: () => {
-      const currentPlate = useScanPlateStore.getState().detectedPlate;
-      reset({ value: currentPlate });
-      setVisible(true);
-    },
-    close: () => setVisible(false),
-  }));
+    const {
+      control,
+      handleSubmit,
+      reset,
+      formState: { errors },
+    } = useForm<PlateForm>({
+      resolver: valibotResolver(PlateSchema),
+      defaultValues: { value: '' },
+    });
 
-  const handleClose = () => setVisible(false);
+    useImperativeHandle(ref, () => ({
+      open: () => {
+        const current = cleanPlateInput(
+          useScanPlateStore.getState().detectedPlate,
+          99
+        );
+        setOcrTooLong(current.length > MAX_PLATE_CHARS);
+        reset({ value: current.slice(0, MAX_PLATE_CHARS) });
+        setVisible(true);
+      },
+      close: () => setVisible(false),
+    }));
 
-  const handleConfirm = (data: { value: string }) => {
-    setDetectedPlate(data.value.toUpperCase());
-    setVisible(false);
-    onConfirm();
-  };
+    const handleClose = () => setVisible(false);
 
-  return (
-    <Modal 
-      visible={visible} 
-      transparent 
-      animationType="fade" 
-      statusBarTranslucent={true}
-      onRequestClose={handleClose}
-    >
-      <View className="flex-1 justify-center items-center px-10">
-        <Pressable 
-          onPress={handleClose}
-          className={`absolute inset-0 ${isDark ? 'bg-black/80' : 'bg-black/60'}`}
-        />
-        
-        <KeyboardAwareScrollView
-          bottomOffset={0}
-          className={`w-full ${isDark ? 'bg-[#1e293b]' : 'bg-white'} rounded-3xl`}
-          style={{ maxHeight: '55%' }}
-          contentContainerStyle={{ flexGrow: 0 }}
-          showsVerticalScrollIndicator={false}
-        >
-          <Pressable 
-            onPress={(e) => e.stopPropagation()}
-            className="p-6 pb-7"
+    const handleConfirm = (data: { value: string }) => {
+      setDetectedPlate(cleanPlateInput(data.value, MAX_PLATE_CHARS));
+      setVisible(false);
+      onConfirm();
+    };
+
+    const previewUri = plateImage || capturedFull;
+
+    return (
+      <Modal
+        visible={visible}
+        transparent
+        animationType="none"
+        statusBarTranslucent
+        onRequestClose={handleClose}
+      >
+        {/* Nền dismiss — layout cố định, keyboard không lift cả màn */}
+        <View className="flex-1 bg-black/55 justify-center px-6">
+          <Pressable className="absolute inset-0" onPress={handleClose} />
+          <View
+            className="w-full max-w-md self-center bg-white rounded-3xl overflow-hidden border border-slate-100"
+            style={{
+              shadowColor: '#0f172a',
+              shadowOffset: { width: 0, height: 12 },
+              shadowOpacity: 0.15,
+              shadowRadius: 24,
+              elevation: 12,
+              maxHeight: '80%',
+            }}
           >
-            {/* Header */}
-            <View className="flex-row items-center justify-between mb-6">
+            <KeyboardAwareScrollView
+              bottomOffset={20}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+              bounces={false}
+              keyboardDismissMode="interactive"
+            >
               <View>
-                <Text className={`${isDark ? 'text-white' : 'text-slate-900'} text-xl font-bold`}>
-                  Hiệu chỉnh biển số
-                </Text>
-                <Text className="text-slate-500 text-xs mt-1">Vui lòng kiểm tra và chỉnh sửa nếu AI đọc sai</Text>
-              </View>
-              <Pressable onPress={handleClose} className={`p-2 ${isDark ? 'bg-slate-700' : 'bg-slate-100'} rounded-full`}>
-                <X size={20} color="#64748b" />
-              </Pressable>
-            </View>
-            
-            {/* Cropped Image Preview */}
-            <View className="mb-6">
-              <Text className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-2">Ảnh biển số đã cắt</Text>
-              <View className={`bg-black rounded-2xl overflow-hidden h-24 border-2 ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
-                {plateImage ? (
-                  <Image 
-                    source={{ uri: plateImage }} 
-                    className="w-full h-full" 
-                    resizeMode="contain" 
-                  />
-                ) : (
-                  <View className="flex-1 items-center justify-center">
-                    <Text className="text-slate-500 text-xs italic">Không tìm thấy vùng biển số</Text>
+                <View className="flex-row items-start justify-between px-5 pt-5 pb-3">
+                  <View className="flex-1 pr-3">
+                    <Text className="text-xl font-black text-slate-900 tracking-tight">
+                      Hiệu chỉnh biển số
+                    </Text>
+                    <Text className="text-slate-400 text-sm mt-1 leading-5">
+                      AI có thể đọc sai — sửa lại cho đúng
+                    </Text>
                   </View>
-                )}
-              </View>
-            </View>
+                  <Pressable
+                    onPress={handleClose}
+                    className="size-9 rounded-full bg-slate-100 items-center justify-center"
+                    hitSlop={8}
+                  >
+                    <X size={18} color={COLORS.slate[500]} />
+                  </Pressable>
+                </View>
 
-            {/* Editing Field */}
-            <View className="mb-8">
-               <View className="flex-row justify-between items-end mb-2">
-                 <Text className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Nhập biển số đúng</Text>
-                 <Text className="text-slate-400 text-[10px]">AI nhận diện: <Text className={`${isDark ? 'text-slate-300' : 'text-slate-500'} font-bold`}>{detectedPlate}</Text></Text>
-               </View>
-               
-               <Controller
-                 control={control}
-                 name="value"
-                 render={({ field: { onChange, value } }) => (
-                   <>
-                     <View className={`border-2 ${errors.value ? 'border-red-500 bg-red-50/10' : (isDark ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-slate-50')} rounded-2xl p-4 flex-row items-center`}>
+                <View className="px-5 pb-5">
+                  <View className="h-28 rounded-2xl bg-slate-50 overflow-hidden border border-slate-100 mb-5">
+                    {previewUri ? (
+                      <Image
+                        source={{ uri: previewUri }}
+                        style={{ width: '100%', height: '100%' }}
+                        resizeMode="contain"
+                      />
+                    ) : (
+                      <View className="flex-1 items-center justify-center">
+                        <Text className="text-slate-400 text-xs">Không có ảnh biển</Text>
+                      </View>
+                    )}
+                  </View>
+
+                  <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
+                    Biển số
+                  </Text>
+                  {detectedPlate ? (
+                    <Text
+                      className={`text-xs mb-2 ${
+                        cleanPlateInput(detectedPlate, 99).length > MAX_PLATE_CHARS
+                          ? 'text-brand-red'
+                          : 'text-slate-400'
+                      }`}
+                    >
+                      AI: {formatDisplayPlate(cleanPlateInput(detectedPlate, MAX_PLATE_CHARS))}
+                      {cleanPlateInput(detectedPlate, 99).length > MAX_PLATE_CHARS
+                        ? '… (quá dài)'
+                        : ''}
+                    </Text>
+                  ) : null}
+
+                  <Controller
+                    control={control}
+                    name="value"
+                    render={({ field: { onChange, value } }) => (
+                      <>
                         <TextInput
-                          value={value}
-                          onChangeText={(val) => onChange(val.toUpperCase())}
-                          placeholder="VD: 51A12345"
-                          placeholderTextColor="#94a3b8"
+                          value={formatDisplayPlate(value)}
+                          onChangeText={(val) => {
+                            setOcrTooLong(false);
+                            onChange(cleanPlateInput(val, MAX_PLATE_CHARS));
+                          }}
+                          maxLength={MAX_PLATE_CHARS + 2}
+                          placeholder="xx-xx-xxxx"
+                          placeholderTextColor={COLORS.slate[400]}
                           autoFocus
                           autoCapitalize="characters"
-                          className={`${isDark ? 'text-white' : 'text-slate-900'} text-3xl font-black flex-1 text-center`}
-                          style={{ fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', letterSpacing: 2 }}
+                          className={`bg-slate-50 rounded-2xl px-4 py-4 text-2xl font-black text-slate-900 font-mono text-center tracking-widest border ${
+                            errors.value || ocrTooLong ? 'border-brand-red' : 'border-slate-200'
+                          }`}
+                          style={{
+                            fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+                          }}
                         />
-                     </View>
-                     {errors.value ? (
-                       <Text className="text-red-500 text-[10px] font-bold mt-2 ml-1 italic">{errors.value.message}</Text>
-                     ) : (
-                       <Text className="text-center text-slate-400 text-xs mt-3 italic">
-                          Hiển thị: {formatDisplayPlate(value)}
-                       </Text>
-                     )}
-                   </>
-                 )}
-               />
-            </View>
+                        {errors.value ? (
+                          <Text className="text-brand-red text-xs mt-2 text-center">
+                            {errors.value.message}
+                          </Text>
+                        ) : ocrTooLong ? (
+                          <Text className="text-brand-red text-xs mt-2 text-center">
+                            OCR quá dài — kiểm tra lại biển
+                          </Text>
+                        ) : null}
+                      </>
+                    )}
+                  />
 
-            {/* Actions */}
-            <Button 
-              label="XÁC NHẬN VÀ TIẾP TỤC"
-              onPress={handleSubmit(handleConfirm)}
-              leftIcon={Check}
-              className="h-16 rounded-2xl"
-              iconSize={22}
-            />
-          </Pressable>
-        </KeyboardAwareScrollView>
-      </View>
-    </Modal>
-  );
-}));
+                  <Button
+                    label="XÁC NHẬN"
+                    onPress={handleSubmit(handleConfirm)}
+                    className="h-14 mt-5 bg-brand-blue border-0 rounded-2xl"
+                    textClassName="text-white font-black text-base"
+                  />
+                </View>
+              </View>
+            </KeyboardAwareScrollView>
+          </View>
+        </View>
+      </Modal>
+    );
+  })
+);
 
 ErrorModal.displayName = 'ErrorModal';

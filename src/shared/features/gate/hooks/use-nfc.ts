@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { nfcService } from '../services/nfc.service';
+import { useCallback, useState } from 'react';
+import { nfcService, StartListeningOpts } from '../services/nfc.service';
 
 export const useNfc = () => {
   const [isReading, setIsReading] = useState(false);
@@ -24,12 +24,23 @@ export const useNfc = () => {
     setIsReading(false);
   }, []);
 
-  const startListening = useCallback(async (onTagFound: (tag: any) => void) => {
-    setIsReading(true);
-    await nfcService.startListening((tag) => {
-      onTagFound(tag);
-    });
-  }, []);
+  const startListening = useCallback(
+    async (onTagFound: (tag: any) => void, opts?: StartListeningOpts) => {
+      setError(null);
+      setIsReading(true);
+      const result = await nfcService.startListening((tag) => {
+        onTagFound(tag);
+      }, opts);
+      if (!result?.ok) {
+        setIsReading(false);
+        setError(result?.reason || 'NFC không khả dụng');
+        return result;
+      }
+      // keep isReading true = "listening" for UI
+      return result;
+    },
+    []
+  );
 
   const stopListening = useCallback(async () => {
     await nfcService.stopListening();

@@ -1,47 +1,79 @@
-import { Button } from '@/shared/components/ui';
-import { Camera as CameraIcon, RotateCcw } from 'lucide-react-native';
+import { COLORS } from '@/shared/constants/color.const';
 import React, { memo } from 'react';
-import { Pressable, useColorScheme, View } from 'react-native';
+import { ActivityIndicator, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useScanPlateStore } from '../store';
 
 interface ActionPanelProps {
   onCapture: () => void;
-  onConfirm: () => void;
+  onConfirm?: () => void;
 }
 
-/** 
- * Panel điều khiển ở dưới màn hình 
- * Hiển thị kết quả nhận diện biển số và các nút bấm hành động
+/**
+ * Nút chụp tròn giữa đáy — safe area bottom.
  */
-export const ActionPanel = memo(({ onCapture, onConfirm }: ActionPanelProps) => {
-  const { isCapturing, reset } = useScanPlateStore();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+export const ActionPanel = memo(({ onCapture }: ActionPanelProps) => {
+  const { isCapturing } = useScanPlateStore();
   const insets = useSafeAreaInsets();
-  
+
   return (
-    <View 
-      style={{ paddingBottom: Math.max(insets.bottom, 24) }}
-      className={`${isDark ? 'bg-[#0f172a]' : 'bg-white'} rounded-t-[32px] p-6 pb-2 gap-4 shadow-xl`}
+    <View
+      pointerEvents="box-none"
+      style={{
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        bottom: 0,
+        alignItems: 'center',
+        paddingBottom: Math.max(insets.bottom, 12) + 16,
+        zIndex: 20,
+      }}
     >
-      <View className="flex-row gap-3">
-        <Button 
-          label="Chụp"
-          onPress={onCapture}
-          disabled={isCapturing}
-          loading={isCapturing}
-          leftIcon={CameraIcon}
-          className="flex-1 h-[60px] rounded-2xl"
-          textClassName="text-lg font-black"
-        />
-        <Pressable 
-          onPress={reset} 
-          className={`${isDark ? 'bg-white/5 border-white/10' : 'bg-slate-100 border-slate-200'} w-[60px] h-[60px] rounded-2xl items-center justify-center border`}
+      <Pressable
+        onPress={onCapture}
+        disabled={isCapturing}
+        accessibilityRole="button"
+        accessibilityLabel="Chụp ảnh"
+        hitSlop={{ top: 28, bottom: 28, left: 28, right: 28 }}
+        style={{ opacity: isCapturing ? 0.65 : 1 }}
+      >
+        {/* Vòng ngoài */}
+        <View
+          style={{
+            width: 78,
+            height: 78,
+            borderRadius: 39,
+            borderWidth: 4,
+            borderColor: '#FFFFFF',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
         >
-          <RotateCcw size={24} color="#94a3b8" />
-        </Pressable>
-      </View>
+          {isCapturing ? (
+            <View
+              style={{
+                width: 62,
+                height: 62,
+                borderRadius: 31,
+                backgroundColor: 'rgba(255,255,255,0.9)',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <ActivityIndicator color={COLORS.brand.blue} />
+            </View>
+          ) : (
+            <View
+              style={{
+                width: 62,
+                height: 62,
+                borderRadius: 31,
+                backgroundColor: '#FFFFFF',
+              }}
+            />
+          )}
+        </View>
+      </Pressable>
     </View>
   );
 });
