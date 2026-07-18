@@ -1,11 +1,10 @@
 import { Button, ControlledInput } from '@/shared/components/ui';
 import { cn } from '@/shared/utils';
 import { valibotResolver } from '@hookform/resolvers/valibot';
-import { Bike, Car, Check, ChevronRight, Edit2, Moon, Plus, Save, Search, Settings2, Sun, Trash2, X, Zap } from 'lucide-react-native';
+import { Bike, Car, Check, ChevronRight, Save, Search, Settings2, X, Zap } from 'lucide-react-native';
 import React, { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
-import { useController, useForm, useWatch } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import {
-  Alert,
   FlatList,
   Image,
   Modal,
@@ -15,23 +14,27 @@ import {
   View,
 } from 'react-native';
 
+import { toast } from '@/shared/store/use-alert-store';
 import { toastQueue } from '@/shared/utils/toast.util';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import * as v from 'valibot';
 import {
+  DAY_START_HOUR,
+  DEFAULT_FLAT_PRICES,
   DEFAULT_MONTHLY_PRICE_CAR,
   DEFAULT_MONTHLY_PRICE_EBIKE,
-  DEFAULT_MONTHLY_PRICE_MOTORBIKE
+  DEFAULT_MONTHLY_PRICE_MOTORBIKE,
+  NIGHT_START_HOUR,
+  VEHICLE_TYPE_LABELS,
 } from '../const';
 import {
-  useCreatePricingRule,
-  useDeletePricingRule,
   usePricingRules,
+  useReplacePricingRules,
   useSystemConfig,
-  useUpdatePricingRule,
   useUpdateSystemConfig
 } from '../hooks';
 import banksData from '@/assets/bank.json';
+import type { TVehicleType } from '../types';
 
 // --- SCHEMAS ---
 
@@ -68,89 +71,32 @@ const ConfigSchema = v.object({
   ),
 });
 
-const PricingRuleSchema = v.object({
-  vehicleType: v.picklist(['motorbike', 'car', 'ebike']),
-  timeType: v.picklist(['daytime', 'overnight']),
-  firstHours: v.pipe(
-    v.string(),
-    v.regex(/^\d+$/, 'Vui lòng chỉ nhập số'),
-    v.transform((val) => Number(val))
-  ),
-  firstPrice: v.pipe(
-    v.string(),
-    v.regex(/^\d+$/, 'Vui lòng chỉ nhập số'),
-    v.transform((val) => Number(val))
-  ),
-  extraPerHour: v.pipe(
-    v.string(),
-    v.regex(/^\d+$/, 'Vui lòng chỉ nhập số'),
-    v.transform((val) => Number(val))
-  ),
-  maxPerDay: v.nullable(v.pipe(
-    v.string(),
-    v.transform((val) => val === '' ? null : Number(val))
-  )),
-  overnightPrice: v.nullable(v.pipe(
-    v.string(),
-    v.transform((val) => val === '' ? null : Number(val))
-  )),
-  overnightStartTime: v.string(),
-  overnightEndTime: v.string(),
-});
+const moneyStr = v.pipe(
+  v.string(),
+  v.regex(/^\d*$/, 'Vui lòng chỉ nhập số'),
+)
 
-type ConfigForm = v.InferOutput<typeof ConfigSchema>;
-type PricingRuleForm = v.InferOutput<typeof PricingRuleSchema>;
+const PricingMatrixSchema = v.object({
+  motorbikeDay: moneyStr,
+  motorbikeNight: moneyStr,
+  motorbikeCross: moneyStr,
+  carDay: moneyStr,
+  carNight: moneyStr,
+  carCross: moneyStr,
+  ebikeDay: moneyStr,
+  ebikeNight: moneyStr,
+  ebikeCross: moneyStr,
+})
 
-// --- COMPONENTS ---
+type ConfigForm = v.InferOutput<typeof ConfigSchema>
+type PricingMatrixForm = v.InferOutput<typeof PricingMatrixSchema>
 
-const ControlledBadgeSelect = ({
-  control,
-  name,
-  label,
-  options,
-}: {
-  control: any;
-  name: string;
-  label: string;
-  options: { label: string; value: string; icon?: React.ReactNode }[];
-}) => {
-  const {
-    field: { value, onChange },
-  } = useController({ control, name });
-
-  return (
-    <View className="gap-2">
-      <Text className="text-note1 text-slate-500 font-medium ml-1">{label}</Text>
-      <View className="flex-row flex-wrap gap-2">
-        {options.map((opt) => {
-          const isSelected = value === opt.value;
-          return (
-            <TouchableOpacity
-              key={opt.value}
-              onPress={() => onChange(opt.value)}
-              className={cn(
-                'flex-row items-center gap-2 px-4 py-2.5 rounded-xl border',
-                isSelected 
-                  ? 'bg-blue-500 border-blue-500' 
-                  : 'bg-white border-slate-200'
-              )}
-            >
-              {opt.icon && React.cloneElement(opt.icon as any, { 
-                color: isSelected ? 'white' : '#64748B' 
-              })}
-              <Text className={cn(
-                'font-bold text-xs',
-                isSelected ? 'text-white' : 'text-slate-500'
-              )}>
-                {opt.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    </View>
-  );
-};
+const VEHICLES: TVehicleType[] = ['motorbike', 'car', 'ebike']
+const VEHICLE_ICON = {
+  motorbike: Bike,
+  car: Car,
+  ebike: Zap,
+} as const
 
 // --- INTERFACES ---
 
@@ -247,20 +193,30 @@ BankPicker.displayName = 'BankPicker';
 
 // --- MODAL COMPONENT ---
 
+function defaultMatrix(): PricingMatrixForm {
+  const m = Object.fromEntries(
+    VEHICLES.flatMap((v) => {
+      const d = DEFAULT_FLAT_PRICES.find((x) => x.vehicleType === v)!
+      return [
+        [`${v}Day`, String(d.dayPrice)],
+        [`${v}Night`, String(d.nightPrice)],
+        [`${v}Cross`, ''],
+      ]
+    }),
+  ) as PricingMatrixForm
+  return m
+}
+
 export const SystemConfigModal = forwardRef<SystemConfigModalRef>((_, ref) => {
   const [visible, setVisible] = useState(false);
   const [activeTab, setActiveTab] = useState<'general' | 'pricing'>('general');
-  const [isAddingNew, setIsAddingNew] = useState(false);
-  const [editingRule, setEditingRule] = useState<any>(null);
   const bankPickerRef = React.useRef<BankPickerRef>(null);
-  
+
   const { data: config } = useSystemConfig();
   const { mutateAsync: updateConfig, isPending: configPending } = useUpdateSystemConfig();
-  
+
   const { data: pricingRules } = usePricingRules();
-  const { mutateAsync: createRule } = useCreatePricingRule();
-  const { mutateAsync: updateRule } = useUpdatePricingRule();
-  const { mutateAsync: deleteRule } = useDeletePricingRule();
+  const { mutateAsync: replaceRules, isPending: pricingPending } = useReplacePricingRules();
 
   const { control, handleSubmit: handleConfigSubmit, reset: resetConfig, setValue } = useForm<ConfigForm>({
     resolver: valibotResolver(ConfigSchema as any),
@@ -278,25 +234,19 @@ export const SystemConfigModal = forwardRef<SystemConfigModalRef>((_, ref) => {
     },
   });
 
-  const watchBankName = useWatch({ 
-    control, 
-    name: 'bankName' 
+  const watchBankName = useWatch({
+    control,
+    name: 'bankName'
   });
 
-  const { control: ruleControl, handleSubmit: handleRuleSubmit, reset: resetRule } = useForm<PricingRuleForm>({
-    resolver: valibotResolver(PricingRuleSchema as any),
-    defaultValues: {
-      vehicleType: 'motorbike',
-      timeType: 'daytime',
-      firstHours: 1 as any,
-      firstPrice: 5000 as any,
-      extraPerHour: 2000 as any,
-      maxPerDay: '' as any,
-      overnightPrice: '' as any,
-      overnightStartTime: '22:00',
-      overnightEndTime: '05:00',
-    },
-  });
+  const {
+    control: matrixControl,
+    handleSubmit: handleMatrixSubmit,
+    reset: resetMatrix,
+  } = useForm<PricingMatrixForm>({
+    resolver: valibotResolver(PricingMatrixSchema as any),
+    defaultValues: defaultMatrix(),
+  })
 
   useEffect(() => {
     if (config && visible) {
@@ -314,6 +264,20 @@ export const SystemConfigModal = forwardRef<SystemConfigModalRef>((_, ref) => {
       });
     }
   }, [config, resetConfig, visible]);
+
+  useEffect(() => {
+    if (!visible) return
+    const next = defaultMatrix()
+    for (const v of VEHICLES) {
+      const row = pricingRules?.find((r) => r.vehicleType === v)
+      if (!row) continue
+      ;(next as any)[`${v}Day`] = String(row.dayPrice)
+      ;(next as any)[`${v}Night`] = String(row.nightPrice)
+      ;(next as any)[`${v}Cross`] =
+        row.crossDayPrice != null ? String(row.crossDayPrice) : ''
+    }
+    resetMatrix(next)
+  }, [visible, pricingRules, resetMatrix])
 
   useImperativeHandle(ref, () => ({
     open: () => setVisible(true),
@@ -342,44 +306,44 @@ export const SystemConfigModal = forwardRef<SystemConfigModalRef>((_, ref) => {
     }
   };
 
-  const onSaveRule = async (data: PricingRuleForm) => {
-    try {
-      if (editingRule) {
-        await updateRule({ id: editingRule.id, values: data });
-      } else {
-        await createRule(data);
+  const onSaveMatrix = (data: PricingMatrixForm) => {
+    const rows = VEHICLES.map((v) => {
+      const day = Number((data as any)[`${v}Day`] || 0)
+      const night = Number((data as any)[`${v}Night`] || 0)
+      const crossRaw = String((data as any)[`${v}Cross`] ?? '').trim()
+      return {
+        vehicleType: v,
+        dayPrice: day,
+        nightPrice: night,
+        crossDayPrice: crossRaw === '' ? null : Number(crossRaw),
       }
-      setEditingRule(null);
-      setIsAddingNew(false);
-      resetRule();
-    } catch (error) {
-      console.error(error);
-      toastQueue.show({
-        type: 'error',
-        text1: 'Lỗi',
-        text2: 'Không thể lưu bảng giá.',
-      });
-    }
-  };
+    })
 
-  const handleDeleteRule = (id: string) => {
-    Alert.alert('Xoá bảng giá', 'Bạn có chắc muốn xoá bảng giá này?', [
-      { text: 'Hủy', style: 'cancel' },
-      { text: 'Xoá', style: 'destructive', onPress: () => deleteRule(id) },
-    ]);
-  };
-
-  const getVehicleIcon = (type: string) => {
-    switch (type) {
-      case 'car': return <Car size={18} color="#3B82F6" />;
-      case 'ebike': return <Zap size={18} color="#10B981" />;
-      default: return <Bike size={18} color="#F59E0B" />;
-    }
-  };
-
-  const getTimeIcon = (type: string) => {
-    return type === 'daytime' ? <Sun size={14} color="#F59E0B" /> : <Moon size={14} color="#6366F1" />;
-  };
+    toast.confirm({
+      title: 'Lưu bảng giá?',
+      message: `Sáng ${DAY_START_HOUR}h–${NIGHT_START_HOUR}h · Tối ${NIGHT_START_HOUR}h–${DAY_START_HOUR}h. Qua ngày trống = sáng+tối.`,
+      confirmLabel: 'Lưu',
+      onConfirm: () => {
+        void (async () => {
+          try {
+            await replaceRules(rows)
+            toastQueue.show({
+              type: 'success',
+              text1: 'Đã lưu bảng giá',
+              text2: 'Áp dụng cho lượt ra tiếp theo.',
+            })
+          } catch (e) {
+            console.error(e)
+            toastQueue.show({
+              type: 'error',
+              text1: 'Lỗi',
+              text2: 'Không lưu được bảng giá.',
+            })
+          }
+        })()
+      },
+    })
+  }
 
   return (
     <>
@@ -552,177 +516,66 @@ export const SystemConfigModal = forwardRef<SystemConfigModalRef>((_, ref) => {
                 </View>
               </>
             ) : (
-              <>
-                {/* Pricing Rules Management */}
-                <View className="gap-4">
-                  <View className="flex-row justify-between items-center mb-2">
-                    <Text className="text-sm font-bold text-slate-400 uppercase tracking-widest pl-1">Các quy tắc tính phí</Text>
-                    <TouchableOpacity 
-                      onPress={() => {
-                        setIsAddingNew(true);
-                        setEditingRule(null);
-                        resetRule({
-                          vehicleType: 'motorbike',
-                          timeType: 'daytime',
-                          firstHours: 1 as any,
-                          firstPrice: 5000 as any,
-                          extraPerHour: 2000 as any,
-                          maxPerDay: '' as any,
-                          overnightPrice: '' as any,
-                          overnightStartTime: '22:00',
-                          overnightEndTime: '05:00',
-                        });
-                      }}
-                      className="bg-blue-500/10 px-3 py-1.5 rounded-lg flex-row items-center gap-1.5"
+              <View className="gap-4">
+                <Text className="text-sm font-bold text-slate-400 uppercase tracking-widest pl-1">
+                  Giá lượt (phẳng)
+                </Text>
+                <Text className="text-xs text-slate-500 leading-5 -mt-2">
+                  Sáng {DAY_START_HOUR}h–{NIGHT_START_HOUR}h · Tối {NIGHT_START_HOUR}h–{DAY_START_HOUR}h.
+                  Cùng ngày tính theo giờ ra. Qua ngày: để trống = sáng+tối, có số thì × số ngày lịch.
+                </Text>
+
+                {VEHICLES.map((v) => {
+                  const Icon = VEHICLE_ICON[v]
+                  return (
+                    <View
+                      key={v}
+                      className="bg-slate-50 p-4 rounded-2xl border border-slate-200 gap-3"
                     >
-                      <Plus size={16} color="#3B82F6" />
-                      <Text className="text-blue-500 font-bold text-xs">Thêm mới</Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  {/* Rule List */}
-                  <View className="gap-3">
-                    {pricingRules?.map((rule: any) => (
-                      <View key={rule.id} className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                        <View className="flex-row justify-between items-start mb-2">
-                          <View className="flex-row items-center gap-2">
-                            {getVehicleIcon(rule.vehicleType)}
-                            <Text className="font-bold text-slate-800 capitalize">
-                              {rule.vehicleType === 'motorbike' ? 'Xe máy' : rule.vehicleType === 'car' ? 'Ô tô' : 'Xe đạp điện'}
-                            </Text>
-                            <View className="bg-slate-200 px-2 py-0.5 rounded-md flex-row items-center gap-1">
-                              {getTimeIcon(rule.timeType)}
-                              <Text className="text-[10px] font-bold text-slate-500 uppercase">
-                                {rule.timeType === 'daytime' ? 'Ngày' : 'Đêm'}
-                              </Text>
-                            </View>
-                          </View>
-                          <View className="flex-row gap-2">
-                            <TouchableOpacity 
-                              onPress={() => {
-                                setIsAddingNew(false);
-                                setEditingRule(rule);
-                                resetRule({
-                                  ...rule,
-                                  firstHours: String(rule.firstHours) as any,
-                                  firstPrice: String(rule.firstPrice) as any,
-                                  extraPerHour: String(rule.extraPerHour) as any,
-                                  maxPerDay: rule.maxPerDay ? String(rule.maxPerDay) : '' as any,
-                                  overnightPrice: rule.overnightPrice ? String(rule.overnightPrice) : '' as any,
-                                });
-                              }}
-                              className="size-8 bg-blue-50 rounded-lg items-center justify-center"
-                            >
-                              <Edit2 size={14} color="#3B82F6" />
-                            </TouchableOpacity>
-                            <TouchableOpacity 
-                              onPress={() => handleDeleteRule(rule.id)}
-                              className="size-8 bg-red-50 rounded-lg items-center justify-center"
-                            >
-                              <Trash2 size={14} color="#EF4444" />
-                            </TouchableOpacity>
-                          </View>
-                        </View>
-                        <Text className="text-xs text-slate-500">
-                          {rule.firstHours}h đầu: {rule.firstPrice.toLocaleString()}đ • Phụ trội: {rule.extraPerHour.toLocaleString()}đ/h
+                      <View className="flex-row items-center gap-2">
+                        <Icon size={18} color="#3B82F6" />
+                        <Text className="font-bold text-slate-800">
+                          {VEHICLE_TYPE_LABELS[v]}
                         </Text>
-                        {rule.overnightPrice && (
-                          <Text className="text-xs text-slate-500 mt-1">
-                            Qua đêm: {rule.overnightPrice.toLocaleString()}đ ({rule.overnightStartTime} - {rule.overnightEndTime})
-                          </Text>
-                        )}
                       </View>
-                    ))}
-                    
-                    {pricingRules?.length === 0 && (
-                      <View className="py-8 items-center justify-center border-2 border-dashed border-slate-200 rounded-2xl">
-                        <Text className="text-slate-400 text-sm">Chưa có bảng giá nào</Text>
-                      </View>
-                    )}
-                  </View>
-
-                  {/* Pricing Rule Form (Editing/Adding) */}
-                  {(isAddingNew || editingRule || pricingRules?.length === 0 || !pricingRules) && (
-                    <View className="bg-white p-5 rounded-2xl border-2 border-blue-500 mt-6 gap-6">
-                      <View className="flex-row justify-between items-center">
-                        <Text className="font-black text-blue-500 uppercase tracking-tighter">
-                          {editingRule ? 'Chỉnh sửa bảng giá' : 'Thêm bảng giá mới'}
-                        </Text>
-                        {(editingRule || isAddingNew) && (
-                          <TouchableOpacity onPress={() => {
-                            setEditingRule(null);
-                            setIsAddingNew(false);
-                          }}>
-                            <Text className="text-slate-400 text-xs font-bold">Hủy</Text>
-                          </TouchableOpacity>
-                        )}
-                      </View>
-
-                      {/* We'd normally use a Picker/Select here, for now using direct inputs for the enums simplified */}
-                      <View className="gap-6">
-                        <ControlledBadgeSelect
-                          control={ruleControl}
-                          name="vehicleType"
-                          label="Loại phương tiện"
-                          options={[
-                            { label: 'Xe máy', value: 'motorbike', icon: <Bike size={16} /> },
-                            { label: 'Ô tô', value: 'car', icon: <Car size={16} /> },
-                            { label: 'Xe đạp điện', value: 'ebike', icon: <Zap size={16} /> },
-                          ]}
-                        />
-
-                        <ControlledBadgeSelect
-                          control={ruleControl}
-                          name="timeType"
-                          label="Khung giờ hiệu lực"
-                          options={[
-                            { label: 'Ban ngày', value: 'daytime', icon: <Sun size={16} /> },
-                            { label: 'Qua đêm', value: 'overnight', icon: <Moon size={16} /> },
-                          ]}
-                        />
-
-                        <View className="flex-row gap-4">
-                          <View className="flex-1">
-                            <ControlledInput control={ruleControl} name="firstHours" label="Số giờ đầu" keyboardType="numeric" />
-                          </View>
-                          <View className="flex-1">
-                            <ControlledInput control={ruleControl} name="firstPrice" label="Giá giờ đầu (₫)" keyboardType="numeric" />
-                          </View>
+                      <View className="flex-row gap-2">
+                        <View className="flex-1">
+                          <ControlledInput
+                            control={matrixControl}
+                            name={`${v}Day` as any}
+                            label={`Sáng (₫)`}
+                            keyboardType="numeric"
+                          />
                         </View>
-
-                        <View className="flex-row gap-4">
-                          <View className="flex-1">
-                            <ControlledInput control={ruleControl} name="extraPerHour" label="Phí phụ trội/h (₫)" keyboardType="numeric" />
-                          </View>
-                          <View className="flex-1">
-                            <ControlledInput control={ruleControl} name="maxPerDay" label="Trần tối đa/ngày" keyboardType="numeric" placeholder="Bỏ trống nếu không có..." />
-                          </View>
-                        </View>
-
-                        <View className="h-px bg-slate-100 my-2" />
-                        
-                        <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Cấu hình qua đêm (Tuỳ chọn)</Text>
-                        <ControlledInput control={ruleControl} name="overnightPrice" label="Giá vé qua đêm (₫)" keyboardType="numeric" />
-                        
-                        <View className="flex-row gap-4">
-                          <View className="flex-1">
-                            <ControlledInput control={ruleControl} name="overnightStartTime" label="Bắt đầu đêm" placeholder="22:00" />
-                          </View>
-                          <View className="flex-1">
-                            <ControlledInput control={ruleControl} name="overnightEndTime" label="Kết thúc đêm" placeholder="05:00" />
-                          </View>
+                        <View className="flex-1">
+                          <ControlledInput
+                            control={matrixControl}
+                            name={`${v}Night` as any}
+                            label={`Tối (₫)`}
+                            keyboardType="numeric"
+                          />
                         </View>
                       </View>
-
-                      <Button
-                        label={editingRule ? "Cập nhật bảng giá" : "Thêm bảng giá"}
-                        onPress={handleRuleSubmit(onSaveRule)}
-                        leftIcon={editingRule ? Save : Plus}
+                      <ControlledInput
+                        control={matrixControl}
+                        name={`${v}Cross` as any}
+                        label="Qua ngày (₫) — trống = sáng+tối"
+                        keyboardType="numeric"
+                        placeholder="Mặc định sáng + tối"
                       />
                     </View>
-                  )}
+                  )
+                })}
+
+                <View className="mt-2 pb-10">
+                  <Button
+                    label="Lưu bảng giá"
+                    onPress={handleMatrixSubmit(onSaveMatrix)}
+                    loading={pricingPending}
+                    leftIcon={Save}
+                  />
                 </View>
-              </>
+              </View>
             )}
           </KeyboardAwareScrollView>
         </View>

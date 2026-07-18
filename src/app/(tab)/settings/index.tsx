@@ -164,12 +164,15 @@ export default function SettingsScreen() {
 
         {!isStaff ? (
           <Card noPadding className="overflow-hidden">
-            <SettingsRow
-              label="Cấu hình hệ thống"
-              icon={Settings2}
-              onPress={() => configModalRef.current?.open()}
-              bordered
-            />
+            {/* Online: config chỉ từ server — không mở UI cấu hình trên máy */}
+            {isOfflineLicense ? (
+              <SettingsRow
+                label="Cấu hình hệ thống"
+                icon={Settings2}
+                onPress={() => configModalRef.current?.open()}
+                bordered
+              />
+            ) : null}
             <SettingsRow
               label="Quản lý nhân viên"
               icon={Users}

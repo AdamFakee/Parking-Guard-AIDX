@@ -1,9 +1,18 @@
 import { db } from '@/shared/db';
 import * as schema from '@/shared/db/schemas';
+import { useAppStore } from '@/shared/features/app/store/use-app-store';
 import { ensurePermanentCompressedImage } from '@/shared/utils/file.utils';
 import { and, desc, eq, isNull, like, sql } from 'drizzle-orm';
 import { DEFAULT_RENEWAL_MONTHS } from '../const';
 import { TSearchVehicleType, TVehicleType } from '../types/gate.types';
+
+/** Online license: config/pricing chỉ server đẩy — chặn ghi local. */
+function assertLocalConfigWritable() {
+  const device = useAppStore.getState().appService?.getSnapshot().context.device
+  if (device?.licenseType === 'online') {
+    throw new Error('Gói Online — cấu hình do server quản lý, không sửa trên máy.')
+  }
+}
 
 export const getDashboardStats = async (shiftId: string) => {
   // Count cars currently in yard
@@ -394,24 +403,59 @@ export const getPricingRules = async () => {
   return await db.select().from(schema.pricingRules);
 };
 export const updateSystemConfig = async (id: number, values: Partial<typeof schema.systemConfigs.$inferInsert>) => {
+  assertLocalConfigWritable()
   return await db.update(schema.systemConfigs)
     .set({ ...values, updatedAt: new Date() })
     .where(eq(schema.systemConfigs.id, id));
 };
 
-export const updatePricingRule = async (id: string, values: Partial<typeof schema.pricingRules.$inferInsert>) => {
-  return await db.update(schema.pricingRules)
+export type PricingRuleInput = {
+  vehicleType: 'motorbike' | 'car' | 'ebike';
+  dayPrice: number
+  nightPrice: number
+  crossDayPrice?: number | null
+}
+
+/** Replace all pricing rows (1 / vehicle). Offline only. */
+export const replacePricingRules = async (rows: PricingRuleInput[]) => {
+  assertLocalConfigWritable()
+  await db.transaction(async (tx) => {
+    await tx.delete(schema.pricingRules)
+    if (rows.length) {
+      await tx.insert(schema.pricingRules).values(
+        rows.map((r) => ({
+          vehicleType: r.vehicleType,
+          dayPrice: r.dayPrice,
+          nightPrice: r.nightPrice,
+          crossDayPrice: r.crossDayPrice ?? null,
+        })),
+      )
+    }
+  })
+}
+
+export const updatePricingRule = async (
+  id: string,
+  values: Partial<typeof schema.pricingRules.$inferInsert>,
+) => {
+  assertLocalConfigWritable()
+  return await db
+    .update(schema.pricingRules)
     .set(values)
-    .where(eq(schema.pricingRules.id, id));
-};
+    .where(eq(schema.pricingRules.id, id))
+}
 
 export const deletePricingRule = async (id: string) => {
-  return await db.delete(schema.pricingRules).where(eq(schema.pricingRules.id, id));
-};
+  assertLocalConfigWritable()
+  return await db.delete(schema.pricingRules).where(eq(schema.pricingRules.id, id))
+}
 
-export const createPricingRule = async (values: typeof schema.pricingRules.$inferInsert) => {
-  return await db.insert(schema.pricingRules).values(values);
-};
+export const createPricingRule = async (
+  values: typeof schema.pricingRules.$inferInsert,
+) => {
+  assertLocalConfigWritable()
+  return await db.insert(schema.pricingRules).values(values)
+}
 
 export const checkNfcCardUsage = async (uid: string) => {
   const [card] = await db

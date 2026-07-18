@@ -16,17 +16,16 @@ export const systemConfigs = sqliteTable('system_configs', {
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }),
 })
 
+/** 1 row / loại xe — giá sáng, tối, qua ngày (null = sáng+tối). */
 export const pricingRules = sqliteTable('pricing_rules', {
   id: text('id')
     .primaryKey()
     .$defaultFn(() => generateUUID()),
-  vehicleType: text('vehicle_type', { enum: ['motorbike', 'car', 'ebike'] }).notNull(),
-  timeType: text('time_type', { enum: ['daytime', 'overnight'] }).notNull(),
-  firstHours: integer('first_hours').notNull(),
-  firstPrice: integer('first_price').notNull(),
-  extraPerHour: integer('extra_per_hour').notNull(),
-  maxPerDay: integer('max_per_day'),
-  overnightPrice: integer('overnight_price'),
-  overnightStartTime: text('overnight_start_time'),
-  overnightEndTime: text('overnight_end_time'),
+  vehicleType: text('vehicle_type', { enum: ['motorbike', 'car', 'ebike'] })
+    .notNull()
+    .unique(),
+  dayPrice: integer('day_price').notNull(),
+  nightPrice: integer('night_price').notNull(),
+  /** null → fallback dayPrice + nightPrice */
+  crossDayPrice: integer('cross_day_price'),
 })
