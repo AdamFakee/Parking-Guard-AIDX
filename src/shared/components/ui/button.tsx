@@ -41,7 +41,7 @@ export const Button = ({
       disabled={disabled}
       className={cn(
         // Base styles
-        'h-12 flex-row items-center justify-center rounded-full border px-12 py-3',
+        'h-12 flex-row items-center justify-center rounded-xl border px-12 py-3',
         // Variants
         variantStyles[variant],
         // Disabled/Loading state

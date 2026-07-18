@@ -2,7 +2,6 @@ import { Button, ControlledInput } from '@/shared/components/ui';
 import { COLORS } from '@/shared/constants';
 import { useDashboardStats } from '@/shared/features/gate/hooks/use-dashboard-stats';
 import { valibotResolver } from '@hookform/resolvers/valibot';
-import { useRouter } from 'expo-router';
 import {
   AlertTriangle,
   Banknote,
@@ -19,6 +18,7 @@ import {
   View
 } from 'react-native';
 
+import { useAppStore } from '@/shared/features/app';
 import { toastQueue } from '@/shared/utils/toast.util';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import * as v from 'valibot';
@@ -50,8 +50,8 @@ export interface CloseShiftModalRef {
 }
 
 export const CloseShiftModal = forwardRef<CloseShiftModalRef>((_, ref) => {
-  const router = useRouter();
   const { currentShift, clearShift } = useShiftStore();
+  const appService = useAppStore((s) => s.appService);
   const { data: stats, isLoading: isLoadingStats } = useDashboardStats(currentShift?.id);
   const { mutateAsync: performCloseShift, isPending: isClosing } = useCloseShift();
 
@@ -113,7 +113,8 @@ export const CloseShiftModal = forwardRef<CloseShiftModalRef>((_, ref) => {
       clearShift();
       setVisible(false);
       reset();
-      router.replace('/auth/login' as any);
+      // Kết ca = logout → gate staff-login
+      appService?.send({ type: 'SHIFT_CLOSED' });
     } catch (err) {
       console.error(err);
       toastQueue.show({

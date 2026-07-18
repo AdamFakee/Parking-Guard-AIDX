@@ -1,17 +1,23 @@
-import { db } from '@/shared/db';
-import { lostCardReports, monthlySubscriptions, parkingEntries } from '@/shared/db/schemas';
-import { and, eq, lt, or } from 'drizzle-orm';
-import * as FileSystem from 'expo-file-system/legacy';
-import { SYNC_CONFIG, generateFileName } from '../config';
-import { useSyncStore } from '../store/use-sync-store';
-import { imageToBase64 } from '../utils/image-helpers';
+import { isOnlineLicense } from '@/shared/features/app/hooks/use-license'
+import { useAppStore } from '@/shared/features/app/store/use-app-store'
+import { db } from '@/shared/db'
+import { lostCardReports, monthlySubscriptions, parkingEntries } from '@/shared/db/schemas'
+import { and, eq, lt, or } from 'drizzle-orm'
+import * as FileSystem from 'expo-file-system/legacy'
+import { SYNC_CONFIG, generateFileName } from '../config'
+import { useSyncStore } from '../store/use-sync-store'
+import { imageToBase64 } from '../utils/image-helpers'
 
 class SyncManager {
-  private isSyncing = false;
+  private isSyncing = false
 
+  /** Chỉ gói online mới sync cloud. Offline = no-op. */
   public async startSync() {
-    if (this.isSyncing) return;
-    this.isSyncing = true;
+    const device = useAppStore.getState().appService?.getSnapshot().context.device
+    if (!isOnlineLicense(device)) return
+
+    if (this.isSyncing) return
+    this.isSyncing = true
     useSyncStore.getState().setSyncing(true);
     try {
       await this.syncParkingEntries();

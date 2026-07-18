@@ -1,157 +1,168 @@
-import { AppHeader, Button } from '@/shared/components/ui';
-import { COLORS } from '@/shared/constants/color.const';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { LucidePlay, LucideUser } from 'lucide-react-native';
-import React, { useState } from 'react';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useStartShift } from '../hooks';
-import { useShiftStore } from '../store';
+import { Button } from '@/shared/components/ui'
+import { COLORS } from '@/shared/constants/color.const'
+import { useAppContext } from '@/shared/features/app/hooks/use-app-context'
+import { useAppStore } from '@/shared/features/app/store/use-app-store'
+import type { Employee } from '@/shared/features/app'
+import { AuthCard, AuthDevBox, AuthScreen } from '@/shared/features/auth'
+import { toast } from '@/shared/store/use-alert-store'
+import { useLocalSearchParams } from 'expo-router'
+import { LucidePlay } from 'lucide-react-native'
+import React, { useState } from 'react'
+import { Text, TextInput, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useStartShift } from '../hooks'
+import { useShiftStore } from '../store'
 
 export const StartShift = () => {
-  const router = useRouter();
-  const insets = useSafeAreaInsets();
-  const { staffId, name, role } = useLocalSearchParams<{ staffId: string; name: string; role: 'admin' | 'staff' }>();
-  const [openingCash, setOpeningCash] = useState('');
-  
-  const { mutate: startShift, isPending } = useStartShift();
-  const setCurrentShift = useShiftStore((state) => state.setCurrentShift);
+  const insets = useSafeAreaInsets()
+  const { staffId, name, role } = useLocalSearchParams<{
+    staffId: string
+    name: string
+    role: 'admin' | 'staff'
+  }>()
+  const ctx = useAppContext()
+  const appService = useAppStore((s) => s.appService)
+  const [openingCash, setOpeningCash] = useState('')
+
+  const { mutate: startShift, isPending } = useStartShift()
+  const setCurrentShift = useShiftStore((state) => state.setCurrentShift)
+
+  const resolvedStaffId = staffId || ctx.employee?.id
+  const resolvedName = name || ctx.employee?.displayName || ''
+  const resolvedRole = (role || ctx.employee?.role || 'staff') as 'admin' | 'staff'
+
+  const onOpened = (data: {
+    id: string
+    staffId: string
+    openingCash: number
+    startTime: Date
+    status: string | null
+  }) => {
+    setCurrentShift({
+      id: data.id,
+      staffId: data.staffId,
+      staffName: resolvedName,
+      openingCash: data.openingCash,
+      startTime: data.startTime.toISOString(),
+      status: data.status as 'open' | 'closed',
+      role: resolvedRole,
+    })
+
+    const employee: Employee = {
+      id: data.staffId,
+      employeeCode: resolvedName,
+      displayName: resolvedName,
+      role: resolvedRole,
+      status: 'active',
+    }
+
+    if (!appService?.getSnapshot().context.employee) {
+      const device = appService?.getSnapshot().context.device
+      if (device) {
+        appService.send({
+          type: 'LOGIN_SUCCESS',
+          accessToken: 'local',
+          employee,
+          device,
+        })
+      }
+    }
+    appService?.send({ type: 'SHIFT_OPENED', cashSessionId: data.id })
+  }
+
+  const openShift = (cash: number) => {
+    if (!resolvedStaffId || isPending) return
+    startShift(
+      { staffId: resolvedStaffId, openingCash: cash },
+      {
+        onSuccess: onOpened,
+        onError: (err: unknown) => {
+          console.error('Failed to start shift:', err)
+        },
+      },
+    )
+  }
 
   const handleStartShift = () => {
-    if (!openingCash || isNaN(Number(openingCash))) return;
-    if (!staffId) return;
+    const cash = Number(openingCash)
+    if (!openingCash || isNaN(cash) || cash <= 0 || !resolvedStaffId) return
 
-    startShift(
-      { staffId, openingCash: Number(openingCash) },
-      {
-        onSuccess: (data) => {
-          // data should match the shift object from DB
-          setCurrentShift({
-            id: data.id,
-            staffId: data.staffId,
-            staffName: name || '',
-            openingCash: data.openingCash,
-            startTime: data.startTime.toISOString(),
-            status: data.status as 'open' | 'closed',
-            role: role || 'staff',
-          });
-          
-          // Navigate to main tabs after starting shift
-          router.replace('/(tab)');
-        },
-        onError: (err: any) => {
-          console.error('Failed to start shift:', err);
-          // Handle error (e.g., show alert)
-        }
-      }
-    );
-  };
+    toast.confirm({
+      title: 'Xác nhận mở ca',
+      message: `${resolvedName || 'NV'} · tiền đầu ca ${cash.toLocaleString('vi-VN')} đ`,
+      confirmLabel: 'Mở ca',
+      onConfirm: () => openShift(cash),
+    })
+  }
 
-  const isButtonDisabled = !openingCash || Number(openingCash) <= 0 || isPending;
+  const isButtonDisabled = !openingCash || Number(openingCash) <= 0 || isPending
 
   const handleDevQuickOpen = () => {
-    if (!staffId || isPending) return;
-    const cash = 500_000;
-    setOpeningCash(String(cash));
-    startShift(
-      { staffId, openingCash: cash },
-      {
-        onSuccess: (data) => {
-          setCurrentShift({
-            id: data.id,
-            staffId: data.staffId,
-            staffName: name || '',
-            openingCash: data.openingCash,
-            startTime: data.startTime.toISOString(),
-            status: data.status as 'open' | 'closed',
-            role: role || 'staff',
-          });
-          router.replace('/(tab)');
-        },
-        onError: (err: any) => {
-          console.error('Failed to start shift:', err);
-        },
-      }
-    );
-  };
+    if (!resolvedStaffId || isPending) return
+    const cash = 500_000
+    setOpeningCash(String(cash))
+    openShift(cash)
+  }
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1 bg-slate-50"
-    >
-      <AppHeader title="Mở ca trực" variant="white" onLeftPress={() => router.back()} />
-
-      <ScrollView className="flex-1 p-4" contentContainerStyle={{ gap: 24 }}>
-        <View className="bg-white rounded-2xl p-5 shadow-sm border-l-4 border-blue-500 flex-row items-center">
-          <View className="w-12 h-12 rounded-full bg-slate-100 items-center justify-center">
-            <LucideUser size={24} color={COLORS.brand.blue} />
-          </View>
-          <View className="ml-4">
-            <Text className="text-xs text-slate-500 font-medium">Nhân viên trực</Text>
-            <Text className="text-lg font-bold text-slate-800">{name}</Text>
-          </View>
-        </View>
-
-        <View className="gap-3">
-          <Text className="text-sm font-semibold text-slate-700 ml-1">
-            Tiền mặt đầu ca <Text className="text-brand-red font-normal">(bắt buộc)</Text>
+    <View className="flex-1 bg-slate-50">
+      <AuthScreen
+        title="Mở ca trực"
+        subtitle={`${resolvedName || '---'} · ${
+          resolvedRole === 'admin' ? 'Quản trị' : 'Nhân viên'
+        }`}
+      >
+        <AuthCard>
+          <Text className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">
+            Tiền mặt đầu ca
           </Text>
-          <View className="relative">
+          <View>
             <TextInput
-              className="w-full px-4 py-5 bg-white border-2 border-slate-200 rounded-2xl focus:border-green-500 text-3xl font-bold text-slate-800"
+              className="w-full h-16 px-4 pr-12 bg-slate-50 border border-slate-200 rounded-xl text-3xl font-extrabold text-slate-900 font-mono"
               placeholder="0"
+              placeholderTextColor={COLORS.slate[400]}
               keyboardType="numeric"
               value={openingCash}
               onChangeText={setOpeningCash}
+              accessibilityLabel="Tiền mặt đầu ca"
             />
-            <View className="absolute inset-y-0 right-0 pr-5 items-center justify-center z-10">
-              <Text className="text-2xl font-bold text-brand-orange">VND</Text>
+            <View className="absolute right-4 top-0 bottom-0 justify-center">
+              <Text className="text-base font-bold text-slate-400">đ</Text>
             </View>
           </View>
-          <Text className="text-xs text-slate-500 italic ml-1">
-            * Nhập tổng số tiền mặt hiện có tại quầy khi bắt đầu
+          <Text className="text-xs text-slate-500">
+            Tổng tiền mặt tại quầy khi bắt đầu ca.
           </Text>
-        </View>
+        </AuthCard>
 
-        {__DEV__ && (
-          <View className="p-3 rounded-2xl border border-dashed border-brand-orange/40 bg-orange-50 gap-2">
-            <Text className="text-[10px] font-black text-brand-orange uppercase tracking-widest text-center">
-              Dev only
-            </Text>
+        {__DEV__ ? (
+          <AuthDevBox>
             <Button
               label="Mở ca nhanh (500.000đ)"
               onPress={handleDevQuickOpen}
-              disabled={isPending || !staffId}
+              disabled={isPending || !resolvedStaffId}
               loading={isPending}
-              className="h-12 bg-brand-orange border-0"
+              className="h-11 bg-brand-orange border-brand-orange rounded-xl px-4"
               textClassName="text-white text-sm font-bold"
             />
-          </View>
-        )}
-      </ScrollView>
+          </AuthDevBox>
+        ) : null}
+      </AuthScreen>
 
       <View
-        style={{ paddingBottom: Math.max(insets.bottom, 20) }}
-        className="p-4 bg-white/80 border-t border-slate-100"
+        style={{ paddingBottom: Math.max(insets.bottom, 12) }}
+        className="px-5 pt-3 pb-1 bg-white border-t border-slate-200"
       >
         <Button
-          label="BẮT ĐẦU CA TRỰC"
+          label="Bắt đầu ca trực"
           onPress={handleStartShift}
           disabled={isButtonDisabled}
           loading={isPending}
           leftIcon={LucidePlay}
-          className="h-16"
-          textClassName="text-white font-black text-lg"
+          className="h-14 rounded-xl px-6"
+          textClassName="text-base font-bold"
         />
       </View>
-    </KeyboardAvoidingView>
-  );
-};
+    </View>
+  )
+}

@@ -1,6 +1,7 @@
+/** MMKV keys — khớp app store / interceptor */
 export const STORAGE_KEYS = {
-  REFRESH_TOKEN: 'auth.refresh_token',
-  ACCESS_TOKEN: 'auth.access_token',
+  APP_MACHINE: 'app-machine-persist',
+  REFRESH_TOKEN: 'auth-refresh-token',
   THEME: 'app.theme',
   LANGUAGE: 'app.language',
-} as const;
+} as const

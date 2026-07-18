@@ -9,6 +9,7 @@ export default function SettingsLayout() {
     >
       <Stack.Screen name="index" />
       <Stack.Screen name="staff-management" />
+      <Stack.Screen name="data-cleanup" />
     </Stack>
   );
 }

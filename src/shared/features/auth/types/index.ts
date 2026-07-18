@@ -1,1 +1,2 @@
-export * from './login.type';
+export * from './auth.api.types'
+export * from './login.type'

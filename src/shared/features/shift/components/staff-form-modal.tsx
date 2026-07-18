@@ -1,4 +1,5 @@
 import { Button, ControlledInput } from '@/shared/components/ui';
+import { ControlledPasswordInput } from '@/shared/components/ui/form/controlled-password-input';
 import { useStaffMutation } from '@/shared/features/shift/hooks';
 import { cn } from '@/shared/utils';
 import { valibotResolver } from '@hookform/resolvers/valibot';
@@ -12,7 +13,7 @@ import {
   View
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
-import { StaffSchema, StaffFormValues } from '../schemas';
+import { StaffFormValues, StaffSchema } from '../schemas';
 
 const defaultValues: StaffFormValues = {
   name: '',
@@ -107,18 +108,17 @@ export const StaffFormModal = forwardRef<StaffFormModalRef>((_, ref) => {
               <ControlledInput
                 control={control}
                 name="name"
-                label="Họ và tên"
-                placeholder="Nhập tên nhân viên"
+                label="Tên tài khoản"
+                placeholder=""
               />
 
-              <ControlledInput
+              <ControlledPasswordInput
                 control={control}
                 name="pinHash"
-                label="Mã PIN (Passcode)"
+                label="Mã PIN"
                 placeholder="Nhập 4 số"
                 maxLength={4}
-                keyboardType="numeric"
-                secureTextEntry
+                keyboardType="number-pad"
               />
 
               <View>

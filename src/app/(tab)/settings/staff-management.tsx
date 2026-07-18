@@ -1,33 +1,38 @@
-import { useShiftStore } from '@/shared/features/shift';
+import { AppHeader, Button } from '@/shared/components/ui';
 import { StaffFormModal, StaffFormModalRef } from '@/shared/features/shift/components';
-import { useGetAllStaff, useStaffMutation } from '@/shared/features/shift/hooks';
+import {
+  isAdminRole,
+  useGetAllStaff,
+  useShiftRole,
+  useStaffMutation,
+} from '@/shared/features/shift/hooks';
+import { useShiftStore } from '@/shared/features/shift/store';
+import { toast } from '@/shared/store/use-alert-store';
 import { cn } from '@/shared/utils';
 import { useRouter } from 'expo-router';
 import { Edit2, Plus, RotateCcw, Shield, Trash2, User, UserCheck } from 'lucide-react-native';
 import React, { useEffect } from 'react';
 import {
-  Alert,
   FlatList,
   Text,
   TouchableOpacity,
   View
 } from 'react-native';
-import { AppHeader, Button } from '@/shared/components/ui';
 
 export default function StaffManagementScreen() {
   const router = useRouter();
   const modalRef = React.useRef<StaffFormModalRef>(null);
   const currentShift = useShiftStore((state) => state.currentShift);
+  const { isAdmin } = useShiftRole();
   const { data: allStaff, isLoading } = useGetAllStaff(undefined, true);
 
   const { deleteMutation, restoreMutation } = useStaffMutation();
 
-  // Redirect if not admin
   useEffect(() => {
-    if (currentShift && currentShift.role !== 'admin') {
+    if (currentShift && !isAdmin) {
       router.replace('/settings' as any);
     }
-  }, [currentShift, router]);
+  }, [currentShift, isAdmin, router]);
 
   const handleOpenAdd = () => {
     modalRef.current?.open();
@@ -38,32 +43,22 @@ export default function StaffManagementScreen() {
   };
 
   const handleDelete = (staff: any) => {
-    Alert.alert(
-      'Xóa nhân viên',
-      `Bạn có chắc chắn muốn xóa nhân viên ${staff.name}? Nhân viên này sẽ không thể đăng nhập cho đến khi được khôi phục.`,
-      [
-        { text: 'Hủy', style: 'cancel' },
-        { 
-          text: 'Xóa', 
-          style: 'destructive',
-          onPress: () => deleteMutation.mutate(staff.id)
-        },
-      ]
-    );
+    toast.confirm({
+      title: 'Xóa nhân viên',
+      message: `Xóa ${staff.name}? NV sẽ không đăng nhập được đến khi khôi phục.`,
+      confirmLabel: 'Xóa',
+      destructive: true,
+      onConfirm: () => deleteMutation.mutate(staff.id),
+    })
   };
 
   const handleRestore = (staff: any) => {
-    Alert.alert(
-      'Khôi phục nhân viên',
-      `Bạn muốn khôi phục nhân viên ${staff.name}?`,
-      [
-        { text: 'Hủy', style: 'cancel' },
-        { 
-          text: 'Khôi phục', 
-          onPress: () => restoreMutation.mutate(staff.id)
-        },
-      ]
-    );
+    toast.confirm({
+      title: 'Khôi phục nhân viên',
+      message: `Khôi phục ${staff.name}?`,
+      confirmLabel: 'Khôi phục',
+      onConfirm: () => restoreMutation.mutate(staff.id),
+    })
   };
 
   // Lọc trừ bản thân ra
@@ -76,16 +71,16 @@ export default function StaffManagementScreen() {
     )}>
       <View className={cn(
         "size-12 rounded-full items-center justify-center mr-4",
-        item.role === 'admin' ? "bg-orange-100" : "bg-blue-100",
+        isAdminRole(item.role) ? "bg-orange-100" : "bg-blue-100",
         item.isDeleted && "bg-slate-200"
       )}>
-        {item.role === 'admin' ? (
+        {isAdminRole(item.role) ? (
           <Shield size={24} color={item.isDeleted ? "#94A3B8" : "#F97316"} />
         ) : (
           <User size={24} color={item.isDeleted ? "#94A3B8" : "#3B82F6"} />
         )}
       </View>
-      
+
       <View className="flex-1">
         <View className="flex-row items-center">
           <Text className="text-lg font-bold text-slate-900">{item.name}</Text>
@@ -96,7 +91,7 @@ export default function StaffManagementScreen() {
           )}
         </View>
         <Text className="text-slate-500 text-sm">
-          {item.role === 'admin' ? 'Quản trị viên' : 'Nhân viên'}
+          {isAdminRole(item.role) ? 'Quản trị viên' : 'Nhân viên'}
         </Text>
       </View>
 

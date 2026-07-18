@@ -1,5 +1,6 @@
 import { db } from '@/shared/db';
 import * as schema from '@/shared/db/schemas';
+import { ensurePermanentCompressedImage } from '@/shared/utils/file.utils';
 
 export type MonthlySubscriptionParams = {
   cardUid: string;
@@ -29,18 +30,27 @@ export const registerMonthlyCard = async (params: MonthlySubscriptionParams) => 
     })
     .onConflictDoUpdate({
       target: schema.nfcCards.uid,
-      set: { 
-        cardType: 'thang', 
-        status: 'active', 
+      set: {
+        cardType: 'thang',
+        status: 'active',
         registeredPlate: params.vehiclePlate,
         expirationDate: params.endDate,
-        updatedAt: new Date() 
+        updatedAt: new Date()
       }
     });
+
+  const photoProfile = params.photoProfile
+    ? await ensurePermanentCompressedImage(params.photoProfile, 'doc')
+    : undefined;
+  const photoVehicle = params.photoVehicle
+    ? await ensurePermanentCompressedImage(params.photoVehicle, 'doc')
+    : undefined;
 
   // 2. Create the Detailed Subscription Record
   return await db.insert(schema.monthlySubscriptions).values({
     ...params,
+    photoProfile,
+    photoVehicle,
     status: 'active',
     createdAt: new Date(),
   }).returning();

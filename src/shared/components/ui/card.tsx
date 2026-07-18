@@ -1,35 +1,40 @@
 import { SHADOW } from '@/shared/constants'
 import { cn } from '@/shared/utils'
-import { View, ViewProps } from 'react-native'
+import { ReactNode } from 'react'
+import { Text, View, ViewProps } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-interface CardProps extends ViewProps {
-  /**
-   * If true, applies padding to respect the device's safe area insets (notch, home indicator, etc.).
-   * Useful for top-level screens or modals.
-   */
-  safeArea?: boolean
-  /**
-   * If true, centers the children content both vertically and horizontally.
-   */
+export interface CardProps extends ViewProps {
+  /** Section label (10px uppercase) above content */
+  title?: string
+  /** Right side of title row (badge, action, …) */
+  titleRight?: ReactNode
+  /** Content centering */
   centered?: boolean
-  /**
-   * If true, applies a shadow effect to the container.
-   * Defaults to `true`.
-   */
+  /** Safe-area padding (full-screen shells) */
+  safeArea?: boolean
+  /** Optional elevation — default off */
   shadow?: boolean
+  /** Disable default p-4 */
+  noPadding?: boolean
+  children?: ReactNode
+  className?: string
 }
 
 /**
- * A wrapper component that provides basic layout styling, including background color and padding.
- * It supports safe area handling and content centering via props.
+ * App surface card — white / slate-200 / rounded-lg.
+ * Use for settings blocks, stats panels, auth forms, etc.
  */
 export const Card = ({
   children,
   className,
+  title,
+  titleRight,
   shadow = false,
   safeArea = false,
   centered = false,
+  noPadding = false,
+  style,
   ...props
 }: CardProps) => {
   const insets = useSafeAreaInsets()
@@ -37,8 +42,8 @@ export const Card = ({
   return (
     <View
       className={cn(
-        'bg-white rounded-2xl',
-        'border border-slate-100',
+        'bg-white rounded-lg border border-slate-200',
+        !noPadding && 'p-4',
         centered && 'items-center justify-center',
         className,
       )}
@@ -49,11 +54,28 @@ export const Card = ({
           paddingLeft: insets.left,
           paddingRight: insets.right,
         },
-        shadow && SHADOW.bottom,
-        props.style,
+        shadow ? SHADOW.bottom : undefined,
+        style,
       ]}
       {...props}
     >
+      {(title || titleRight) && (
+        <View
+          className={cn(
+            'flex-row items-center justify-between',
+            children != null ? 'mb-3' : null,
+          )}
+        >
+          {title ? (
+            <Text className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">
+              {title}
+            </Text>
+          ) : (
+            <View />
+          )}
+          {titleRight}
+        </View>
+      )}
       {children}
     </View>
   )

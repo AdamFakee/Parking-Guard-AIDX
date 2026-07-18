@@ -1,14 +1,15 @@
-import * as v from 'valibot';
+import * as v from 'valibot'
 
+/** Chung online + offline: mã NV / SĐT + PIN 4 số */
 export const LoginSchema = v.object({
-  phone: v.pipe(
-    v.string('Số điện thoại bắt buộc nhập'),
-    v.nonEmpty('Vui lòng nhập số điện thoại'),
-    v.regex(/(84|0[3|5|7|8|9])+([0-9]{8})\b/, 'Số điện thoại Việt Nam không hợp lệ')
+  employeeCode: v.pipe(
+    v.string('Mã nhân viên bắt buộc'),
+    v.nonEmpty('Vui lòng nhập mã NV hoặc SĐT'),
+    v.minLength(1),
   ),
   pin: v.pipe(
-    v.string('Mã PIN bắt buộc nhập'),
+    v.string('Mã PIN bắt buộc'),
     v.length(4, 'Mã PIN phải có đúng 4 chữ số'),
-    v.regex(/^\d+$/, 'Mã PIN chỉ được chứa chữ số (0-9)')
-  )
-});
+    v.regex(/^\d+$/, 'Mã PIN chỉ được chứa chữ số'),
+  ),
+})

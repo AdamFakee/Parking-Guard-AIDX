@@ -1,6 +1,6 @@
 import { db } from '@/shared/db';
 import * as schema from '@/shared/db/schemas';
-import { ensurePermanentImage } from '@/shared/utils/file.utils';
+import { ensurePermanentCompressedImage } from '@/shared/utils/file.utils';
 import { and, desc, eq, isNull, like, sql } from 'drizzle-orm';
 import { DEFAULT_RENEWAL_MONTHS } from '../const';
 import { TSearchVehicleType, TVehicleType } from '../types/gate.types';
@@ -220,9 +220,9 @@ export const checkIn = async (params: CheckInParams) => {
     });
   }
 
-  // Ensure images are stored permanently
-  const photoIn1 = await ensurePermanentImage(params.photoIn1);
-  const photoIn2 = await ensurePermanentImage(params.photoIn2);
+  // Nén + lưu vĩnh viễn (full ~250KB, crop biển nhỏ hơn)
+  const photoIn1 = await ensurePermanentCompressedImage(params.photoIn1, 'full');
+  const photoIn2 = await ensurePermanentCompressedImage(params.photoIn2, 'crop');
 
   return await db.insert(schema.parkingEntries).values({
     entryShiftId: params.entryShiftId,
@@ -335,9 +335,9 @@ export const checkOut = async (params: CheckOutParams) => {
       ));
   }
 
-  // Ensure images are stored permanently
-  const photoOut1 = await ensurePermanentImage(params.photoOut1);
-  const photoOut2 = await ensurePermanentImage(params.photoOut2);
+  // Nén + lưu vĩnh viễn (full ~250KB, crop biển nhỏ hơn)
+  const photoOut1 = await ensurePermanentCompressedImage(params.photoOut1, 'full');
+  const photoOut2 = await ensurePermanentCompressedImage(params.photoOut2, 'crop');
 
   // 2. Update parking entry
   const [updatedRecord] = await db.update(schema.parkingEntries)
@@ -361,9 +361,15 @@ export const checkOut = async (params: CheckOutParams) => {
 
   // 3. Create lost card report if needed
   if (params.isLostCard) {
-    const photoPerson = params.photoPerson ? await ensurePermanentImage(params.photoPerson) : '';
-    const photoVehicle = params.photoVehicle ? await ensurePermanentImage(params.photoVehicle) : '';
-    const photoDocument = params.photoDocument ? await ensurePermanentImage(params.photoDocument) : null;
+    const photoPerson = params.photoPerson
+      ? await ensurePermanentCompressedImage(params.photoPerson, 'doc')
+      : '';
+    const photoVehicle = params.photoVehicle
+      ? await ensurePermanentCompressedImage(params.photoVehicle, 'doc')
+      : '';
+    const photoDocument = params.photoDocument
+      ? await ensurePermanentCompressedImage(params.photoDocument, 'doc')
+      : null;
 
     await db.insert(schema.lostCardReports).values({
       entryId: params.entryId,

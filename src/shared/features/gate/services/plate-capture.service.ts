@@ -61,7 +61,10 @@ export async function recognizePlateFromPhoto(
     const res = await ImageManipulator.manipulateAsync(
       rawUri,
       [{ crop: rect }],
-      { format: ImageManipulator.SaveFormat.JPEG }
+      {
+        compress: 0.8,
+        format: ImageManipulator.SaveFormat.JPEG,
+      },
     );
     cropUri = res.uri.startsWith('file://') ? res.uri : `file://${res.uri}`;
     targetUri = cropUri;
