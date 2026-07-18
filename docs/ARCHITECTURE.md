@@ -1,7 +1,9 @@
 # React Native Modern Architecture Documentation
 
 **Version:** 1.0.0
-**Stack:** Expo SDK 52+, NativeWind v4, Zustand, TanStack Query, Valibot, Ky, MMKV.
+**Stack:** Expo SDK 54+, NativeWind v4, Zustand, TanStack Query, Valibot, Axios, XState, MMKV, SQLite/Drizzle.
+
+> **Backend / nghiệp vụ POS:** xem [`BACKEND_BUSINESS.md`](./BACKEND_BUSINESS.md) (license offline/online, bootstrap, pricing, gate, API contract).
 
 ## 1. Tổng quan Kiến trúc
 
